@@ -76,7 +76,7 @@ export class CanvasTipografia extends LitElement {
     }
   }
 
-  private handleInput(event: Event) {
+  private handleBlur(event: FocusEvent) {
     const target = event.target as HTMLParagraphElement;
     this.dispatchEvent(
       new CustomEvent('text-change', {
@@ -88,9 +88,7 @@ export class CanvasTipografia extends LitElement {
         },
       }),
     );
-  }
 
-  private handleBlur() {
     this.dispatchEvent(
       new CustomEvent('text-edit-finish', {
         bubbles: true,
@@ -114,22 +112,22 @@ export class CanvasTipografia extends LitElement {
       height: 100%;
       box-sizing: border-box;
       padding: 0;
-      display: flex;
-      align-items: flex-start;
+      display: grid;
+      align-content: start;
+      justify-items: stretch;
     }
 
     .sample {
       margin: 0;
-    }
-
-    .sample {
+      padding: 0;
       color: #172033;
-      line-height: 1.15;
+      line-height: 0.95;
       word-break: break-word;
       width: 100%;
       user-select: none;
       outline: none;
       white-space: pre-wrap;
+      align-self: start;
     }
 
     .sample[contenteditable='true'] {
@@ -167,7 +165,6 @@ export class CanvasTipografia extends LitElement {
           contenteditable=${this.editing ? 'true' : 'false'}
           spellcheck="false"
           style=${`text-align:${this.align};font-weight:${this.computedFontWeight};font-style:${this.computedFontStyle};font-size:${this.fontSize}px;`}
-          @input=${this.handleInput}
           @blur=${this.handleBlur}
         >
           ${this.text}

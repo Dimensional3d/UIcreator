@@ -12,6 +12,8 @@ type CanvasTypographyItem = {
   id: string;
   x: number;
   y: number;
+  width: number;
+  height: number;
   preset: TypographyPreset;
   align: TypographyAlign;
   bold: boolean;
@@ -59,11 +61,20 @@ export class HomeScreen extends LitElement {
   private viewportAnimationTimeout?: number;
   private nextTypographyId = 1;
   private dragState: CanvasItemDragState | null = null;
+  private resizeObserver?: ResizeObserver;
 
   static styles = css`
     :host {
       display: block;
       min-height: 100vh;
+    }
+
+    .workspace[data-dragging='true'] {
+      cursor: grabbing;
+    }
+
+    .workspace[data-dragging='true'] * {
+      cursor: grabbing !important;
     }
 
     .workspace {
@@ -222,9 +233,7 @@ export class HomeScreen extends LitElement {
     .canvas-item {
       position: absolute;
       z-index: 1;
-      width: 240px;
       min-width: 220px;
-      height: 120px;
       min-height: 72px;
       resize: both;
       overflow: hidden;
@@ -295,7 +304,6 @@ export class HomeScreen extends LitElement {
     }
 
     .canvas-frame[data-mode='mobile'] .canvas-item {
-      width: 208px;
       min-width: 184px;
     }
 
@@ -526,7 +534,61 @@ export class HomeScreen extends LitElement {
     window.clearTimeout(this.viewportAnimationTimeout);
     window.removeEventListener('pointermove', this.handleWindowPointerMove);
     window.removeEventListener('pointerup', this.handleWindowPointerUp);
+    this.resizeObserver?.disconnect();
     super.disconnectedCallback();
+  }
+
+  protected firstUpdated() {
+    this.resizeObserver = new ResizeObserver((entries) => {
+      const updates = new Map<string, { width: number; height: number }>();
+
+      for (const entry of entries) {
+        const element = entry.target as HTMLElement;
+        const itemId = element.dataset.itemId;
+        if (!itemId) {
+          continue;
+        }
+
+        updates.set(itemId, {
+          width: Math.round(entry.contentRect.width),
+          height: Math.round(entry.contentRect.height),
+        });
+      }
+
+      if (updates.size === 0) {
+        return;
+      }
+
+      let didChange = false;
+      const nextItems = this.typographyItems.map((item) => {
+        const nextSize = updates.get(item.id);
+        if (!nextSize) {
+          return item;
+        }
+
+        if (item.width === nextSize.width && item.height === nextSize.height) {
+          return item;
+        }
+
+        didChange = true;
+        return { ...item, width: nextSize.width, height: nextSize.height };
+      });
+
+      if (didChange) {
+        this.typographyItems = nextItems;
+      }
+    });
+  }
+
+  protected updated() {
+    if (!this.resizeObserver) {
+      return;
+    }
+
+    this.resizeObserver.disconnect();
+    this.renderRoot.querySelectorAll<HTMLElement>('.canvas-item').forEach((element) => {
+      this.resizeObserver?.observe(element);
+    });
   }
 
   private getDefaultFontSize(preset: TypographyPreset) {
@@ -534,12 +596,16 @@ export class HomeScreen extends LitElement {
   }
 
   private createTypographyItem(x: number, y: number) {
+    const width = this.viewport === 'mobile' ? 208 : 240;
+    const height = 120;
     this.typographyItems = [
       ...this.typographyItems,
       {
         id: `typo-${this.nextTypographyId++}`,
         x,
         y,
+        width,
+        height,
         preset: this.toolTypographyPreset,
         align: 'left',
         bold: false,
@@ -607,12 +673,17 @@ export class HomeScreen extends LitElement {
   }
 
   private handleCanvasItemDoubleClick(itemId: string) {
+    this.handleWindowPointerUp();
     this.selectedTypographyId = itemId;
     this.editingTypographyId = itemId;
   }
 
   private handleCanvasItemPointerDown(event: PointerEvent, itemId: string) {
     if (event.button !== 0) {
+      return;
+    }
+
+    if (this.editingTypographyId === itemId || event.detail >= 2) {
       return;
     }
 
@@ -800,7 +871,7 @@ export class HomeScreen extends LitElement {
 
   render() {
     return html`
-      <div class="workspace">
+      <div class="workspace" data-dragging=${String(this.activeDraggedTool !== null)}>
         <section class="stage">
           <div
             class="canvas-frame"
@@ -854,8 +925,9 @@ export class HomeScreen extends LitElement {
                     (item) => html`
                       <div
                         class="canvas-item"
+                        data-item-id=${item.id}
                         data-selected=${String(this.selectedTypographyId === item.id)}
-                        style=${`left:${item.x}px; top:${item.y}px;`}
+                        style=${`left:${item.x}px; top:${item.y}px; width:${item.width}px; height:${item.height}px;`}
                         @dblclick=${() => this.handleCanvasItemDoubleClick(item.id)}
                         @pointerdown=${(event: PointerEvent) =>
                           this.handleCanvasItemPointerDown(event, item.id)}
