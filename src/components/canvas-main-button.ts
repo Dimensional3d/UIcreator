@@ -6,6 +6,9 @@ export class CanvasMainButton extends LitElement {
   @property({ type: String })
   label = 'Conoce más';
 
+  @property({ type: Number })
+  fontSize = 22;
+
   static styles = css`
     :host {
       display: block;
@@ -21,7 +24,6 @@ export class CanvasMainButton extends LitElement {
       background: linear-gradient(180deg, #1829b8 0%, #1220a0 100%);
       color: #ffffff;
       font-family: var(--font-sans);
-      font-size: 22px;
       font-weight: 500;
       line-height: 1;
       letter-spacing: -0.01em;
@@ -45,6 +47,10 @@ export class CanvasMainButton extends LitElement {
   `;
 
   render() {
-    return html`<button class="button" type="button">${this.label}</button>`;
+    return html`
+      <button class="button" type="button" style=${`font-size:${this.fontSize}px;`}>
+        ${this.label}
+      </button>
+    `;
   }
 }

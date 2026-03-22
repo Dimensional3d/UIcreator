@@ -57,6 +57,7 @@ type CanvasButtonItem = {
   variant: 'main' | 'secondary' | 'opportunity';
   label: string;
   action: string;
+  fontSize: number;
 };
 
 type CanvasIconItem = {
@@ -339,7 +340,7 @@ export class HomeScreen extends LitElement {
     }
 
     .canvas-frame {
-      width: min(100%, 960px);
+      width: min(100%, 1120px);
       min-height: 820px;
       margin-top: 8px;
       display: grid;
@@ -358,21 +359,8 @@ export class HomeScreen extends LitElement {
       gap: 16px;
     }
 
-    .canvas-title {
-      margin: 0;
-      color: #ffffff;
-      font-size: 1rem;
-      font-family: var(--font-display);
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      border: none;
-      background: transparent;
-      padding: 0;
-      cursor: pointer;
-      text-align: left;
-    }
-
     .canvas-controls-right {
+      flex: 0 0 auto;
       display: flex;
       justify-content: flex-end;
       align-items: center;
@@ -415,6 +403,8 @@ export class HomeScreen extends LitElement {
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     .canvas-tab {
@@ -1476,6 +1466,21 @@ export class HomeScreen extends LitElement {
     this.canvasScenes.set(this.activeCanvasId, this.cloneCanvasScene(this.getActiveCanvasScene()));
   }
 
+  private get activeCanvas() {
+    return this.canvases.find((canvas) => canvas.id === this.activeCanvasId) ?? this.canvases[0] ?? null;
+  }
+
+  private getCanvasFallbackName(canvasId: string) {
+    const index = this.canvases.findIndex((canvas) => canvas.id === canvasId);
+    return index >= 0 ? `Lienzo ${index + 1}` : 'Lienzo';
+  }
+
+  private enterCanvasEditing() {
+    this.handleWindowPointerUp();
+    this.clearActiveEditingState();
+    this.isCanvasEditing = true;
+  }
+
   private loadCanvasScene(scene: CanvasScene) {
     const nextScene = this.cloneCanvasScene(scene);
 
@@ -1516,10 +1521,12 @@ export class HomeScreen extends LitElement {
     this.canvases = [...this.canvases, nextCanvas];
     this.activeCanvasId = nextCanvas.id;
     this.loadCanvasScene(nextScene);
+    this.isCanvasEditing = true;
   }
 
   private handleSelectCanvas(canvasId: string) {
     if (canvasId === this.activeCanvasId) {
+      this.enterCanvasEditing();
       return;
     }
 
@@ -1527,6 +1534,7 @@ export class HomeScreen extends LitElement {
     const nextScene = this.canvasScenes.get(canvasId) ?? this.createEmptyCanvasScene();
     this.activeCanvasId = canvasId;
     this.loadCanvasScene(nextScene);
+    this.isCanvasEditing = true;
   }
 
   private getDefaultFontSize(preset: TypographyPreset) {
@@ -1667,6 +1675,7 @@ export class HomeScreen extends LitElement {
         variant,
         label: 'Conoce más',
         action: '',
+        fontSize: 22,
       },
     ];
   }
@@ -1689,23 +1698,178 @@ export class HomeScreen extends LitElement {
   }
 
   private createDesktopMenuItem(
-    x: number,
     y: number,
     parentId: string | null = null,
-    width = this.viewport === 'mobile' ? 338 : 880,
+    availableWidth = this.viewport === 'mobile' ? 430 : 1120,
+    desktopStart = 1,
+    mobileStart = 1,
   ) {
-    this.desktopMenuItems = [
-      ...this.desktopMenuItems,
+    const scale = Math.max(0.72, Math.min(1, availableWidth / 1040));
+    const size = (value: number, min = 1) => Math.max(min, Math.round(value * scale));
+    const containerItem = this.resolveContainerCollision({
+      id: `container-${this.nextContainerId++}`,
+      parentId,
+      y,
+      height: size(118, 96),
+      order: this.nextCanvasOrder++,
+      background: 'var(--color-surface)',
+      borderRadius: size(28),
+      paddingTop: size(16),
+      paddingRight: size(18),
+      paddingBottom: size(16),
+      paddingLeft: size(18),
+      desktopStart: this.clampContainerStart(desktopStart, 12, 12),
+      desktopSpan: 12,
+      mobileStart: this.clampContainerStart(mobileStart, 4, 4),
+      mobileSpan: 4,
+    });
+
+    this.containerItems = [...this.containerItems, containerItem];
+
+    const nextParentId = containerItem.id;
+    this.logoItems = [
+      ...this.logoItems,
       {
-        id: `desktop-menu-${this.nextDesktopMenuId++}`,
-        parentId,
-        x,
-        y,
-        width: Math.max(1, Math.round(width)),
-        height: 118,
+        id: `logo-${this.nextLogoId++}`,
+        parentId: nextParentId,
+        x: size(12),
+        y: size(14),
+        width: size(118),
+        height: size(36, 24),
         order: this.nextCanvasOrder++,
       },
     ];
+
+    this.typographyItems = [
+      ...this.typographyItems,
+      {
+        id: `typo-${this.nextTypographyId++}`,
+        parentId: nextParentId,
+        x: size(170),
+        y: size(28),
+        width: size(92),
+        height: size(24, 18),
+        order: this.nextCanvasOrder++,
+        preset: 'benton-medium',
+        align: 'left',
+        bold: true,
+        italic: false,
+        color: 'var(--color-primary-strong)',
+        fontSize: size(16, 12),
+        text: 'Personas',
+      },
+      {
+        id: `typo-${this.nextTypographyId++}`,
+        parentId: nextParentId,
+        x: size(286),
+        y: size(28),
+        width: size(184),
+        height: size(24, 18),
+        order: this.nextCanvasOrder++,
+        preset: 'benton-medium',
+        align: 'left',
+        bold: false,
+        italic: false,
+        color: 'var(--color-primary-strong)',
+        fontSize: size(16, 12),
+        text: 'Empresas y Gobierno',
+      },
+      {
+        id: `typo-${this.nextTypographyId++}`,
+        parentId: nextParentId,
+        x: size(494),
+        y: size(28),
+        width: size(54),
+        height: size(24, 18),
+        order: this.nextCanvasOrder++,
+        preset: 'benton-medium',
+        align: 'left',
+        bold: false,
+        italic: false,
+        color: 'var(--color-primary-strong)',
+        fontSize: size(16, 12),
+        text: 'Pyme',
+      },
+      {
+        id: `typo-${this.nextTypographyId++}`,
+        parentId: nextParentId,
+        x: size(978),
+        y: size(28),
+        width: size(48),
+        height: size(24, 18),
+        order: this.nextCanvasOrder++,
+        preset: 'benton-medium',
+        align: 'left',
+        bold: false,
+        italic: false,
+        color: 'var(--color-primary-strong)',
+        fontSize: size(16, 12),
+        text: 'Menú',
+      },
+    ];
+
+    this.buttonItems = [
+      ...this.buttonItems,
+      {
+        id: `button-${this.nextButtonId++}`,
+        parentId: nextParentId,
+        x: size(604),
+        y: size(10),
+        width: size(124, 92),
+        height: size(55, 42),
+        order: this.nextCanvasOrder++,
+        variant: 'secondary',
+        label: 'Acceso',
+        action: '',
+        fontSize: size(16, 12),
+      },
+      {
+        id: `button-${this.nextButtonId++}`,
+        parentId: nextParentId,
+        x: size(750),
+        y: size(10),
+        width: size(172, 120),
+        height: size(55, 42),
+        order: this.nextCanvasOrder++,
+        variant: 'opportunity',
+        label: 'Hazte cliente',
+        action: '',
+        fontSize: size(16, 12),
+      },
+    ];
+
+    this.iconItems = [
+      ...this.iconItems,
+      {
+        id: `icon-${this.nextIconId++}`,
+        parentId: nextParentId,
+        x: size(942),
+        y: size(25),
+        width: size(24, 18),
+        height: size(24, 18),
+        order: this.nextCanvasOrder++,
+        icon: 'search',
+      },
+      {
+        id: `icon-${this.nextIconId++}`,
+        parentId: nextParentId,
+        x: size(1032),
+        y: size(25),
+        width: size(24, 18),
+        height: size(24, 18),
+        order: this.nextCanvasOrder++,
+        icon: 'menu',
+      },
+    ];
+
+    this.selectedTypographyId = nextParentId;
+    this.editingTypographyId = null;
+    this.editingButtonId = null;
+    this.editingIconId = null;
+    this.editingLogoId = null;
+    this.editingMicroIllustrationId = null;
+    this.editingContainerId = nextParentId;
+    this.isCanvasEditing = false;
   }
 
   private createLogoItem(x: number, y: number, parentId: string | null = null) {
@@ -2235,7 +2399,7 @@ export class HomeScreen extends LitElement {
     }
 
     if (event.detail.tool === 'desktop-menu') {
-      this.createDesktopMenuItem(parentId ? 16 : 24, parentId ? 16 : 24, parentId, parentId ? 320 : 880);
+      this.createDesktopMenuItem(parentId ? 16 : 24, parentId, parentId ? 320 : 1040);
       return;
     }
 
@@ -2275,10 +2439,11 @@ export class HomeScreen extends LitElement {
     }
   }
 
-  private handleCanvasTitleClick() {
-    this.handleWindowPointerUp();
-    this.clearActiveEditingState();
-    this.isCanvasEditing = true;
+  private handleActiveCanvasNameInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.canvases = this.canvases.map((canvas) =>
+      canvas.id === this.activeCanvasId ? { ...canvas, name: input.value } : canvas,
+    );
   }
 
   private handleCanvasItemDoubleClick(itemId: string) {
@@ -3148,6 +3313,7 @@ export class HomeScreen extends LitElement {
   }
 
   private buildButtonCode(item: CanvasButtonItem) {
+    const fontSize = item.fontSize ?? 22;
     const background =
       item.variant === 'secondary'
         ? '#ffffff'
@@ -3173,7 +3339,7 @@ export class HomeScreen extends LitElement {
       `background: ${background}`,
       `color: ${color}`,
       "font-family: 'Benton Sans BBVA', sans-serif",
-      'font-size: 22px',
+      `font-size: ${fontSize}px`,
       'font-weight: 500',
       'line-height: 1',
       'letter-spacing: -0.01em',
@@ -3512,18 +3678,14 @@ export class HomeScreen extends LitElement {
 
     if (tool === 'desktop-menu') {
       const hostRect = dropContainer?.rect ?? rect;
-      const itemWidth = Math.min(hostRect.width, this.viewport === 'mobile' ? 338 : 880);
+      const itemWidth = Math.min(hostRect.width, this.viewport === 'mobile' ? 430 : 1120);
       const itemHeight = 118;
-      const x = Math.max(
-        0,
-        Math.min(hostRect.width - itemWidth, event.clientX - hostRect.left - itemWidth / 2),
-      );
       const y = Math.max(
         0,
         Math.min(hostRect.height - itemHeight, event.clientY - hostRect.top - itemHeight / 2),
       );
 
-      this.createDesktopMenuItem(x, y, dropContainer?.container.id ?? null, itemWidth);
+      this.createDesktopMenuItem(y, dropContainer?.container.id ?? null, itemWidth);
       return;
     }
 
@@ -3604,11 +3766,21 @@ export class HomeScreen extends LitElement {
   }
 
   private renderCanvasButton(item: CanvasButtonItem): TemplateResult {
+    const fontSize = item.fontSize ?? 22;
     return item.variant === 'secondary'
-      ? html`<canvas-secondary-button .label=${item.label}></canvas-secondary-button>`
+      ? html`<canvas-secondary-button
+          .label=${item.label}
+          .fontSize=${fontSize}
+        ></canvas-secondary-button>`
       : item.variant === 'opportunity'
-        ? html`<canvas-opportunity-button .label=${item.label}></canvas-opportunity-button>`
-        : html`<canvas-main-button .label=${item.label}></canvas-main-button>`;
+        ? html`<canvas-opportunity-button
+            .label=${item.label}
+            .fontSize=${fontSize}
+          ></canvas-opportunity-button>`
+        : html`<canvas-main-button
+            .label=${item.label}
+            .fontSize=${fontSize}
+          ></canvas-main-button>`;
   }
 
   private renderCanvasEntry(entry: CanvasEntry): TemplateResult {
@@ -3845,9 +4017,20 @@ export class HomeScreen extends LitElement {
             data-transitioning=${String(this.isViewportTransitioning)}
           >
             <div class="canvas-controls">
-              <button class="canvas-title" type="button" @click=${this.handleCanvasTitleClick}>
-                Lienzo
-              </button>
+              <div class="canvas-tabs" aria-label="Lista de lienzos">
+                ${this.canvases.map(
+                  (canvas) => html`
+                    <button
+                      class="canvas-tab"
+                      type="button"
+                      data-active=${String(canvas.id === this.activeCanvasId)}
+                      @click=${() => this.handleSelectCanvas(canvas.id)}
+                    >
+                      ${canvas.name.trim() || this.getCanvasFallbackName(canvas.id)}
+                    </button>
+                  `,
+                )}
+              </div>
 
               <div class="canvas-controls-right">
                 <div class="segmented" aria-label="Viewport selector">
@@ -3883,21 +4066,6 @@ export class HomeScreen extends LitElement {
                   </svg>
                 </button>
               </div>
-            </div>
-
-            <div class="canvas-tabs" aria-label="Lista de lienzos">
-              ${this.canvases.map(
-                (canvas) => html`
-                  <button
-                    class="canvas-tab"
-                    type="button"
-                    data-active=${String(canvas.id === this.activeCanvasId)}
-                    @click=${() => this.handleSelectCanvas(canvas.id)}
-                  >
-                    ${canvas.name}
-                  </button>
-                `,
-              )}
             </div>
 
             <div class="canvas-shell">
@@ -4348,6 +4516,16 @@ export class HomeScreen extends LitElement {
                     <div class="tool-group">
                       <h3 class="section-title">Lienzo</h3>
                       <div class="editor-stack">
+                        <div class="editor-row">
+                          <p class="editor-label">Nombre</p>
+                          <input
+                            class="editor-input"
+                            type="text"
+                            .value=${this.activeCanvas?.name ?? ''}
+                            placeholder=${this.getCanvasFallbackName(this.activeCanvasId)}
+                            @input=${this.handleActiveCanvasNameInput}
+                          />
+                        </div>
                         <div class="editor-row">
                           <p class="editor-label">Fondo</p>
                           ${this.renderColorDropdown('canvas', CANVAS_BACKGROUND_OPTIONS, this.canvasBackground, (value) => {

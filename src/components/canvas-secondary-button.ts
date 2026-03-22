@@ -6,6 +6,9 @@ export class CanvasSecondaryButton extends LitElement {
   @property({ type: String })
   label = 'Conoce más';
 
+  @property({ type: Number })
+  fontSize = 22;
+
   static styles = css`
     :host {
       display: block;
@@ -21,7 +24,6 @@ export class CanvasSecondaryButton extends LitElement {
       background: #ffffff;
       color: #1829b8;
       font-family: var(--font-sans);
-      font-size: 22px;
       font-weight: 500;
       line-height: 1;
       letter-spacing: -0.01em;
@@ -47,6 +49,10 @@ export class CanvasSecondaryButton extends LitElement {
   `;
 
   render() {
-    return html`<button class="button" type="button">${this.label}</button>`;
+    return html`
+      <button class="button" type="button" style=${`font-size:${this.fontSize}px;`}>
+        ${this.label}
+      </button>
+    `;
   }
 }
