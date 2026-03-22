@@ -39,6 +39,9 @@ export class CanvasTipografia extends LitElement {
   @property({ type: Boolean })
   italic = false;
 
+  @property({ type: String })
+  color = 'var(--color-text)';
+
   @property({ type: Boolean })
   editing = false;
 
@@ -120,19 +123,24 @@ export class CanvasTipografia extends LitElement {
     .sample {
       margin: 0;
       padding: 0;
-      color: #172033;
       line-height: 0.95;
-      word-break: break-word;
       width: 100%;
       user-select: none;
       outline: none;
-      white-space: pre-wrap;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: normal;
       align-self: start;
     }
 
     .sample[contenteditable='true'] {
       user-select: text;
       cursor: text;
+      white-space: pre-wrap;
+      overflow: visible;
+      text-overflow: clip;
+      word-break: break-word;
     }
 
     .sample.benton-book {
@@ -164,11 +172,9 @@ export class CanvasTipografia extends LitElement {
           class="sample ${this.preset}"
           contenteditable=${this.editing ? 'true' : 'false'}
           spellcheck="false"
-          style=${`text-align:${this.align};font-weight:${this.computedFontWeight};font-style:${this.computedFontStyle};font-size:${this.fontSize}px;`}
+          style=${`color:${this.color};text-align:${this.align};font-weight:${this.computedFontWeight};font-style:${this.computedFontStyle};font-size:${this.fontSize}px;`}
           @blur=${this.handleBlur}
-        >
-          ${this.text}
-        </p>
+        >${this.text}</p>
       </article>
     `;
   }

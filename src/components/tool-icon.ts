@@ -1,12 +1,9 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import type { TypographyPreset } from './canvas-tipografia';
+import './canvas-icon';
 
-@customElement('tool-tipografia')
-export class ToolTipografia extends LitElement {
-  @property({ type: String })
-  preset: TypographyPreset = 'benton-book';
-
+@customElement('tool-icon')
+export class ToolIcon extends LitElement {
   @property({ type: Boolean })
   selected = false;
 
@@ -16,8 +13,7 @@ export class ToolTipografia extends LitElement {
         bubbles: true,
         composed: true,
         detail: {
-          tool: 'tipografia',
-          preset: this.preset,
+          tool: 'icon',
           active,
         },
       }),
@@ -25,8 +21,8 @@ export class ToolTipografia extends LitElement {
   }
 
   private handleDragStart(event: DragEvent) {
-    event.dataTransfer?.setData('application/x-ui-tool', 'tipografia');
-    event.dataTransfer?.setData('text/plain', 'tipografia');
+    event.dataTransfer?.setData('application/x-ui-tool', 'icon');
+    event.dataTransfer?.setData('text/plain', 'icon');
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'copy';
     }
@@ -43,8 +39,7 @@ export class ToolTipografia extends LitElement {
         bubbles: true,
         composed: true,
         detail: {
-          tool: 'tipografia',
-          preset: this.preset,
+          tool: 'icon',
         },
       }),
     );
@@ -87,28 +82,8 @@ export class ToolTipografia extends LitElement {
       box-shadow: 0 0 0 1px rgba(132, 168, 255, 0.18);
     }
 
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .title,
     .badge {
-      margin: 0;
-    }
-
-    .title {
-      color: #ffffff;
-      font-size: 0.88rem;
-      font-family: var(--font-sans);
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .badge {
-      min-width: 36px;
+      width: 36px;
       height: 36px;
       border-radius: 12px;
       display: grid;
@@ -116,9 +91,17 @@ export class ToolTipografia extends LitElement {
       background: rgba(132, 168, 255, 0.16);
       border: 1px solid rgba(132, 168, 255, 0.25);
       color: #d8e3ff;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    .title {
+      margin: 0;
+      color: #ffffff;
       font-size: 0.88rem;
+      font-family: var(--font-sans);
       font-weight: 500;
-      letter-spacing: 0.02em;
+      white-space: nowrap;
     }
   `;
 
@@ -134,10 +117,10 @@ export class ToolTipografia extends LitElement {
         @dragstart=${this.handleDragStart}
         @dragend=${this.handleDragEnd}
       >
-        <p class="badge">Aa</p>
-        <div class="header">
-          <p class="title">Textos</p>
+        <div class="badge" aria-hidden="true">
+          <canvas-icon .icon=${'home'}></canvas-icon>
         </div>
+        <p class="title">Icon</p>
       </article>
     `;
   }

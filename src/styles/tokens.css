@@ -35,16 +35,48 @@
 }
 
 :root {
-  --color-bg: #131e44;
-  --color-surface: #ffffff;
-  --color-card: #ffffff;
-  --color-text: #172033;
-  --color-muted: #6d7890;
-  --color-primary: #2457ff;
-  --color-primary-soft: #edf2ff;
-  --color-primary-ink: #ffffff;
-  --color-border: #d9e1ee;
+  /* Base palette from the provided swatches */
+  --palette-neutral-0: #ffffff;
+  --palette-neutral-25: #f4f6f8;
+  --palette-brand-500: #2d7cff;
+  --palette-brand-600: #2f6fbe;
+  --palette-brand-700: #1829b8;
+  --palette-brand-900: #131e44;
+  --palette-brand-950: #0b102f;
+  --palette-warm-50: #fdf3dd;
+  --palette-sky-100: #c7dbef;
+  --palette-ink-700: #6d7890;
+  --palette-border-200: #d9e1ee;
+
+  /* Semantic tokens for backgrounds */
+  --color-bg: var(--palette-brand-900);
+  --color-bg-strong: var(--palette-brand-950);
+  --color-surface: var(--palette-neutral-0);
+  --color-surface-soft: var(--palette-neutral-25);
+  --color-surface-accent: var(--palette-sky-100);
+  --color-surface-warm: var(--palette-warm-50);
+  --color-card: var(--palette-neutral-0);
+  --color-panel: var(--palette-brand-950);
+
+  /* Semantic tokens for typography */
+  --color-text: var(--palette-brand-900);
+  --color-text-strong: var(--palette-brand-950);
+  --color-text-soft: var(--palette-brand-600);
+  --color-text-muted: var(--palette-ink-700);
+  --color-text-inverse: var(--palette-neutral-0);
+
+  /* Semantic tokens for actions and accents */
+  --color-primary: var(--palette-brand-500);
+  --color-primary-strong: var(--palette-brand-700);
+  --color-primary-soft: #edf3ff;
+  --color-primary-ink: var(--palette-neutral-0);
+  --color-border: var(--palette-border-200);
   --color-dots: rgba(132, 168, 255, 0.28);
+  --color-link: var(--palette-brand-700);
+  --color-highlight: var(--palette-sky-100);
+
+  /* Backward-compatible alias used in the current UI */
+  --color-muted: var(--color-text-muted);
   --radius-md: 16px;
   --radius-lg: 28px;
   --space-2: 8px;
