@@ -1,3 +1,39 @@
+@font-face {
+  font-family: 'Benton Sans BBVA';
+  src: url('https://www.bbva.mx/content/dam/public-web/global/fonts/BentonSansBBVA-Book-Lite.woff2')
+    format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Benton Sans BBVA';
+  src: url('https://www.bbva.mx/content/dam/public-web/global/fonts/BentonSansBBVA-Medium-Lite.woff2')
+    format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Benton Sans BBVA';
+  src: url('https://www.bbva.mx/content/dam/public-web/global/fonts/BentonSansBBVA-MediumItalic-Lite.woff2')
+    format('woff2');
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tiempos Headline';
+  src: url('https://www.bbva.mx/content/dam/public-web/global/fonts/tiempos-headline-bold.woff2')
+    format('woff2');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
   --color-bg: #131e44;
   --color-surface: #ffffff;
@@ -8,7 +44,7 @@
   --color-primary-soft: #edf2ff;
   --color-primary-ink: #ffffff;
   --color-border: #d9e1ee;
-  --color-dots: rgba(36, 87, 255, 0.14);
+  --color-dots: rgba(132, 168, 255, 0.28);
   --radius-md: 16px;
   --radius-lg: 28px;
   --space-2: 8px;
@@ -17,17 +53,23 @@
   --space-6: 24px;
   --space-8: 32px;
   --shadow-md: 0 18px 45px rgba(32, 52, 95, 0.12);
-  font-family: Manrope, 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-sans: 'Benton Sans BBVA', 'Segoe UI', sans-serif;
+  --font-display: 'Tiempos Headline', Georgia, serif;
+  font-family: var(--font-sans);
 }
 
 html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--color-bg);
+  background:
+    radial-gradient(circle, var(--color-dots) 1.1px, transparent 1.1px),
+    var(--color-bg);
+  background-size: 16px 16px;
   color: var(--color-text);
 }
 
 body {
   line-height: 1.5;
+  font-family: var(--font-sans);
 }
