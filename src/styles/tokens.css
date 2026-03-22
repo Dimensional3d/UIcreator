@@ -1,0 +1,33 @@
+:root {
+  --color-bg: #131e44;
+  --color-surface: #ffffff;
+  --color-card: #ffffff;
+  --color-text: #172033;
+  --color-muted: #6d7890;
+  --color-primary: #2457ff;
+  --color-primary-soft: #edf2ff;
+  --color-primary-ink: #ffffff;
+  --color-border: #d9e1ee;
+  --color-dots: rgba(36, 87, 255, 0.14);
+  --radius-md: 16px;
+  --radius-lg: 28px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --shadow-md: 0 18px 45px rgba(32, 52, 95, 0.12);
+  font-family: Manrope, 'Avenir Next', 'Segoe UI', sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+body {
+  line-height: 1.5;
+}
