@@ -1,9 +1,8 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import './canvas-icon';
 
-@customElement('tool-icon')
-export class ToolIcon extends LitElement {
+@customElement('tool-input-text')
+export class ToolInputText extends LitElement {
   @property({ type: Boolean })
   selected = false;
 
@@ -13,7 +12,7 @@ export class ToolIcon extends LitElement {
         bubbles: true,
         composed: true,
         detail: {
-          tool: 'icon',
+          tool: 'input-text',
           active,
         },
       }),
@@ -21,8 +20,8 @@ export class ToolIcon extends LitElement {
   }
 
   private handleDragStart(event: DragEvent) {
-    event.dataTransfer?.setData('application/x-ui-tool', 'icon');
-    event.dataTransfer?.setData('text/plain', 'icon');
+    event.dataTransfer?.setData('application/x-ui-tool', 'input-text');
+    event.dataTransfer?.setData('text/plain', 'input-text');
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'copy';
     }
@@ -39,7 +38,7 @@ export class ToolIcon extends LitElement {
         bubbles: true,
         composed: true,
         detail: {
-          tool: 'icon',
+          tool: 'input-text',
         },
       }),
     );
@@ -83,17 +82,14 @@ export class ToolIcon extends LitElement {
     }
 
     .badge {
-      width: 42px;
-      height: 42px;
+      width: 36px;
+      height: 36px;
       border-radius: 12px;
       display: grid;
       place-items: center;
-      background: rgba(255, 255, 255, 0.96);
-      border: 1px solid rgba(217, 225, 238, 0.95);
-      color: #001391;
-      padding: 6px;
-      box-sizing: border-box;
-      overflow: hidden;
+      background: rgba(132, 168, 255, 0.16);
+      border: 1px solid rgba(132, 168, 255, 0.25);
+      color: #d8e3ff;
     }
 
     .title {
@@ -103,6 +99,12 @@ export class ToolIcon extends LitElement {
       font-family: var(--font-sans);
       font-weight: 500;
       white-space: nowrap;
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+      display: block;
     }
   `;
 
@@ -119,9 +121,13 @@ export class ToolIcon extends LitElement {
         @dragend=${this.handleDragEnd}
       >
         <div class="badge" aria-hidden="true">
-          <canvas-icon .icon=${'home'}></canvas-icon>
+          <svg viewBox="0 0 20 20" fill="none">
+            <rect x="2.5" y="3.5" width="15" height="13" rx="4" stroke="currentColor" stroke-width="1.6" />
+            <path d="M6 8h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            <path d="M6 11.5h5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.72" />
+          </svg>
         </div>
-        <p class="title">Icon</p>
+        <p class="title">Input Text</p>
       </article>
     `;
   }

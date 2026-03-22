@@ -1,4 +1,13 @@
-export type IconName = 'home' | 'profile' | 'document' | 'search' | 'location' | 'help' | 'menu';
+export type IconName =
+  | 'home'
+  | 'profile'
+  | 'document'
+  | 'search'
+  | 'location'
+  | 'help'
+  | 'menu'
+  | 'eye'
+  | 'eye-off';
 
 export type IconOption = {
   value: IconName;
@@ -70,6 +79,25 @@ export const ICON_OPTIONS: IconOption[] = [
       <path d="M4 7H20" stroke="#001391" stroke-width="1.8" stroke-linecap="round"></path>
       <path d="M10 12H20" stroke="#001391" stroke-width="1.8" stroke-linecap="round"></path>
       <path d="M4 17H20" stroke="#001391" stroke-width="1.8" stroke-linecap="round"></path>
+    `,
+  },
+  {
+    value: 'eye',
+    label: 'Eye',
+    viewBox: '0 0 24 24',
+    body: `
+      <path d="M2.4 12s3.3-5.6 9.6-5.6 9.6 5.6 9.6 5.6-3.3 5.6-9.6 5.6S2.4 12 2.4 12Z" stroke="#001391" stroke-width="1.8" stroke-linejoin="round"></path>
+      <circle cx="12" cy="12" r="2.7" stroke="#001391" stroke-width="1.8"></circle>
+    `,
+  },
+  {
+    value: 'eye-off',
+    label: 'Eye Off',
+    viewBox: '0 0 24 24',
+    body: `
+      <path d="M2.4 12s3.3-5.6 9.6-5.6 9.6 5.6 9.6 5.6-3.3 5.6-9.6 5.6S2.4 12 2.4 12Z" stroke="#001391" stroke-width="1.8" stroke-linejoin="round"></path>
+      <circle cx="12" cy="12" r="2.7" stroke="#001391" stroke-width="1.8"></circle>
+      <path d="M4 20 20 4" stroke="#001391" stroke-width="1.8" stroke-linecap="round"></path>
     `,
   },
 ];

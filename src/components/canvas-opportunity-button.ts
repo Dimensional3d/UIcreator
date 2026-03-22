@@ -19,6 +19,7 @@ export class CanvasOpportunityButton extends LitElement {
     .button {
       width: 100%;
       height: 100%;
+      box-sizing: border-box;
       border: none;
       border-radius: 18px;
       background: var(--color-primary);
@@ -28,7 +29,7 @@ export class CanvasOpportunityButton extends LitElement {
       line-height: 1;
       letter-spacing: -0.01em;
       box-shadow: 0 16px 32px rgba(45, 124, 255, 0.22);
-      padding: 0 28px;
+      padding: 0 16px;
       cursor: pointer;
       transition:
         background 160ms ease,

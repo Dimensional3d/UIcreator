@@ -1,9 +1,9 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import './canvas-icon';
+import './canvas-icon-button';
 
-@customElement('tool-icon')
-export class ToolIcon extends LitElement {
+@customElement('tool-icon-button')
+export class ToolIconButton extends LitElement {
   @property({ type: Boolean })
   selected = false;
 
@@ -13,7 +13,7 @@ export class ToolIcon extends LitElement {
         bubbles: true,
         composed: true,
         detail: {
-          tool: 'icon',
+          tool: 'icon-button',
           active,
         },
       }),
@@ -21,8 +21,8 @@ export class ToolIcon extends LitElement {
   }
 
   private handleDragStart(event: DragEvent) {
-    event.dataTransfer?.setData('application/x-ui-tool', 'icon');
-    event.dataTransfer?.setData('text/plain', 'icon');
+    event.dataTransfer?.setData('application/x-ui-tool', 'icon-button');
+    event.dataTransfer?.setData('text/plain', 'icon-button');
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'copy';
     }
@@ -39,7 +39,7 @@ export class ToolIcon extends LitElement {
         bubbles: true,
         composed: true,
         detail: {
-          tool: 'icon',
+          tool: 'icon-button',
         },
       }),
     );
@@ -90,8 +90,7 @@ export class ToolIcon extends LitElement {
       place-items: center;
       background: rgba(255, 255, 255, 0.96);
       border: 1px solid rgba(217, 225, 238, 0.95);
-      color: #001391;
-      padding: 6px;
+      padding: 4px;
       box-sizing: border-box;
       overflow: hidden;
     }
@@ -119,9 +118,9 @@ export class ToolIcon extends LitElement {
         @dragend=${this.handleDragEnd}
       >
         <div class="badge" aria-hidden="true">
-          <canvas-icon .icon=${'home'}></canvas-icon>
+          <canvas-icon-button .icon=${'search'}></canvas-icon-button>
         </div>
-        <p class="title">Icon</p>
+        <p class="title">Icon Buton</p>
       </article>
     `;
   }

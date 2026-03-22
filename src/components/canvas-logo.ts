@@ -17,16 +17,20 @@ export class CanvasLogo extends LitElement {
       width: 100%;
       height: 100%;
       box-sizing: border-box;
-      padding: 8px;
-      display: grid;
-      place-items: center;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
     }
 
     img {
-      width: 100%;
+      width: auto;
       height: 100%;
-      object-fit: contain;
+      max-width: 100%;
+      max-height: 100%;
       display: block;
+      object-fit: contain;
     }
   `;
 

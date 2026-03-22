@@ -1,5 +1,6 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 export type TypographyPreset =
   | 'benton-book'
@@ -62,9 +63,53 @@ export class CanvasTipografia extends LitElement {
     return this.italic ? 'italic' : 'normal';
   }
 
+  private get editorElement() {
+    return this.renderRoot.querySelector('.sample') as HTMLParagraphElement | null;
+  }
+
+  private normalizeMarkup(markup: string) {
+    const trimmed = markup.trim();
+
+    if (!trimmed || trimmed === '<br>') {
+      return '';
+    }
+
+    return markup;
+  }
+
+  private hasSelectionInsideEditor() {
+    const editor = this.editorElement;
+    const selection = window.getSelection();
+
+    if (!editor || !selection || selection.rangeCount === 0) {
+      return false;
+    }
+
+    const anchorNode = selection.anchorNode;
+    const focusNode = selection.focusNode;
+    const range = selection.getRangeAt(0);
+
+    return Boolean(
+      (anchorNode && editor.contains(anchorNode)) ||
+        (focusNode && editor.contains(focusNode)) ||
+        editor.contains(range.commonAncestorContainer),
+    );
+  }
+
+  applyInlineFormat(command: 'bold' | 'italic') {
+    const editor = this.editorElement;
+    if (!editor || !this.editing || !this.hasSelectionInsideEditor()) {
+      return null;
+    }
+
+    editor.focus();
+    document.execCommand(command);
+    return this.normalizeMarkup(editor.innerHTML);
+  }
+
   protected updated(changedProperties: Map<string, unknown>) {
     if (changedProperties.has('editing') && this.editing) {
-      const sample = this.renderRoot.querySelector('.sample') as HTMLParagraphElement | null;
+      const sample = this.editorElement;
       if (!sample) {
         return;
       }
@@ -87,7 +132,7 @@ export class CanvasTipografia extends LitElement {
         composed: true,
         detail: {
           id: this.itemId,
-          text: target.textContent ?? '',
+          text: this.normalizeMarkup(target.innerHTML),
         },
       }),
     );
@@ -174,7 +219,7 @@ export class CanvasTipografia extends LitElement {
           spellcheck="false"
           style=${`color:${this.color};text-align:${this.align};font-weight:${this.computedFontWeight};font-style:${this.computedFontStyle};font-size:${this.fontSize}px;`}
           @blur=${this.handleBlur}
-        >${this.text}</p>
+        >${unsafeHTML(this.text)}</p>
       </article>
     `;
   }

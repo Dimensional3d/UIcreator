@@ -8,6 +8,9 @@ export class CanvasIcon extends LitElement {
   @property({ type: String })
   icon: IconName = 'home';
 
+  @property({ type: String })
+  color = 'var(--color-primary-strong)';
+
   private get selectedIcon() {
     return ICON_OPTIONS.find((option) => option.value === this.icon) ?? ICON_OPTIONS[0];
   }
@@ -24,7 +27,7 @@ export class CanvasIcon extends LitElement {
       height: 100%;
       display: grid;
       place-items: center;
-      color: #001391;
+      color: var(--icon-color, #001391);
     }
 
     svg {
@@ -37,7 +40,7 @@ export class CanvasIcon extends LitElement {
 
   render() {
     return html`
-      <div class="icon" aria-label=${this.selectedIcon.label}>
+      <div class="icon" aria-label=${this.selectedIcon.label} style=${`--icon-color:${this.color};`}>
         <svg
           viewBox=${this.selectedIcon.viewBox}
           fill="currentColor"
