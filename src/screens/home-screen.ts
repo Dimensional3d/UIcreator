@@ -1150,7 +1150,7 @@ export class HomeScreen extends LitElement {
 
     .workspace[data-tools-drawer-mode='true'][data-tools-drawer-open='true'] .tools-drawer-backdrop {
       opacity: 1;
-      pointer-events: auto;
+      pointer-events: none;
     }
 
     .workspace[data-tools-drawer-mode='true'] .tools-panel {
@@ -1303,6 +1303,14 @@ export class HomeScreen extends LitElement {
 
     .tools-drawer-close {
       display: none;
+      background: rgba(255, 214, 10, 0.22);
+      border-color: rgba(255, 214, 10, 0.3);
+      color: #fff7d1;
+    }
+
+    .tools-drawer-close:hover {
+      background: rgba(255, 214, 10, 0.3);
+      border-color: rgba(255, 214, 10, 0.4);
     }
 
     .workspace[data-tools-drawer-mode='true'] .tools-drawer-close {
@@ -5049,7 +5057,6 @@ export class HomeScreen extends LitElement {
     const clickedInsideCanvasMenu = path.some(
       (target) => target instanceof HTMLElement && target.dataset.canvasMenu === 'true',
     );
-
     if (!clickedInsideDropdown) {
       this.openColorDropdown = null;
     }
@@ -6982,12 +6989,6 @@ export class HomeScreen extends LitElement {
                 </svg>
                 <span>Herramientas</span>
               </button>
-              <button
-                class="tools-drawer-backdrop"
-                type="button"
-                @click=${this.closeToolsDrawer}
-                aria-label="Cerrar panel de herramientas"
-              ></button>
             `
           : null}
 
@@ -7031,12 +7032,12 @@ export class HomeScreen extends LitElement {
                         <button
                           class="panel-action tools-drawer-close"
                           @click=${this.closeToolsDrawer}
-                          aria-label="Cerrar herramientas"
-                          title="Cerrar herramientas"
+                          aria-label="Minimizar herramientas"
+                          title="Minimizar herramientas"
                         >
                           <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                             <path
-                              d="M5 5l10 10M15 5L5 15"
+                              d="M5 10h10"
                               stroke="currentColor"
                               stroke-width="1.8"
                               stroke-linecap="round"
