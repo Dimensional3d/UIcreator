@@ -1,7 +1,7 @@
 import { LitElement, css, html } from 'lit';
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 import { customElement, property } from 'lit/decorators.js';
-import { ICON_OPTIONS, type IconName } from './icon-library';
+import { ICON_OPTIONS, colorizeIconBody, type IconName } from './icon-library';
 
 @customElement('canvas-icon')
 export class CanvasIcon extends LitElement {
@@ -13,6 +13,10 @@ export class CanvasIcon extends LitElement {
 
   private get selectedIcon() {
     return ICON_OPTIONS.find((option) => option.value === this.icon) ?? ICON_OPTIONS[0];
+  }
+
+  private get colorizedIconBody() {
+    return colorizeIconBody(this.selectedIcon.body);
   }
 
   static styles = css`
@@ -47,7 +51,7 @@ export class CanvasIcon extends LitElement {
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
         >
-          ${unsafeSVG(this.selectedIcon.body)}
+          ${unsafeSVG(this.colorizedIconBody)}
         </svg>
       </div>
     `;

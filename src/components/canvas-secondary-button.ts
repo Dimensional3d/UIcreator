@@ -21,7 +21,7 @@ export class CanvasSecondaryButton extends LitElement {
       height: 100%;
       box-sizing: border-box;
       border: none;
-      border-radius: 18px;
+      border-radius: 16px;
       background: #ffffff;
       color: #1829b8;
       font-family: var(--font-sans);

@@ -4,11 +4,13 @@ import {
   TYPOGRAPHY_PRESET_OPTIONS,
   type TypographyAlign,
   type TypographyPreset,
+  type TypographyVerticalAlign,
 } from '../components/canvas-tipografia';
 import '../components/canvas-contenedor';
 import '../components/canvas-desktop-menu';
 import '../components/canvas-icon';
 import '../components/canvas-icon-button';
+import '../components/canvas-image';
 import '../components/canvas-input-text';
 import '../components/canvas-logo';
 import '../components/canvas-main-button';
@@ -20,6 +22,7 @@ import '../components/tool-contenedor';
 import '../components/tool-desktop-menu';
 import '../components/tool-icon';
 import '../components/tool-icon-button';
+import '../components/tool-image';
 import '../components/tool-input-text';
 import '../components/tool-logo';
 import '../components/tool-main-button';
@@ -27,7 +30,7 @@ import '../components/tool-micro-illustration';
 import '../components/tool-opportunity-button';
 import '../components/tool-secondary-button';
 import '../components/tool-tipografia';
-import { ICON_OPTIONS, type IconName } from '../components/icon-library';
+import { ICON_OPTIONS, colorizeIconBody, type IconName } from '../components/icon-library';
 import {
   MICRO_ILLUSTRATION_OPTIONS,
   type MicroIllustrationName,
@@ -43,6 +46,7 @@ type CanvasTypographyItem = {
   order: number;
   preset: TypographyPreset;
   align: TypographyAlign;
+  verticalAlign: TypographyVerticalAlign;
   bold: boolean;
   italic: boolean;
   color: string;
@@ -77,6 +81,7 @@ type CanvasInputTextItem = {
   label: string;
   value: string;
   icon: IconName;
+  iconVisible: boolean;
   status: 'active' | 'inactive';
 };
 
@@ -123,6 +128,18 @@ type CanvasMicroIllustrationItem = {
   illustration: MicroIllustrationName;
 };
 
+type CanvasImageItem = {
+  id: string;
+  parentId: string | null;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  order: number;
+  src: string;
+  alt: string;
+};
+
 type CanvasContainerItem = {
   id: string;
   parentId: string | null;
@@ -161,7 +178,8 @@ type CanvasLeafEntry =
   | { kind: 'icon'; item: CanvasIconItem }
   | { kind: 'desktop-menu'; item: CanvasDesktopMenuItem }
   | { kind: 'logo'; item: CanvasLogoItem }
-  | { kind: 'micro-illustration'; item: CanvasMicroIllustrationItem };
+  | { kind: 'micro-illustration'; item: CanvasMicroIllustrationItem }
+  | { kind: 'image'; item: CanvasImageItem };
 
 type CanvasEntry = CanvasLeafEntry | { kind: 'container'; item: CanvasContainerItem };
 type ColorOption = { value: string; label: string };
@@ -176,6 +194,7 @@ type ToolPreview =
   | 'desktop-menu'
   | 'logo'
   | 'micro-illustration'
+  | 'image'
   | 'contenedor'
   | `custom-molecule:${string}`
   | null;
@@ -264,6 +283,7 @@ type CanvasScene = {
   desktopMenuItems: CanvasDesktopMenuItem[];
   logoItems: CanvasLogoItem[];
   microIllustrationItems: CanvasMicroIllustrationItem[];
+  imageItems: CanvasImageItem[];
   containerItems: CanvasContainerItem[];
   nextTypographyId: number;
   nextButtonId: number;
@@ -272,6 +292,7 @@ type CanvasScene = {
   nextDesktopMenuId: number;
   nextLogoId: number;
   nextMicroIllustrationId: number;
+  nextImageId: number;
   nextContainerId: number;
   nextCanvasOrder: number;
 };
@@ -336,6 +357,9 @@ export class HomeScreen extends LitElement {
   private microIllustrationItems: CanvasMicroIllustrationItem[] = [];
 
   @state()
+  private imageItems: CanvasImageItem[] = [];
+
+  @state()
   private containerItems: CanvasContainerItem[] = [];
 
   @state()
@@ -355,6 +379,9 @@ export class HomeScreen extends LitElement {
 
   @state()
   private editingMicroIllustrationId: string | null = null;
+
+  @state()
+  private editingImageId: string | null = null;
 
   @state()
   private editingContainerId: string | null = null;
@@ -404,9 +431,11 @@ export class HomeScreen extends LitElement {
   private nextDesktopMenuId = 1;
   private nextLogoId = 1;
   private nextMicroIllustrationId = 1;
+  private nextImageId = 1;
   private nextContainerId = 1;
   private nextCanvasOrder = 1;
   private dragState: CanvasItemDragState | null = null;
+  private pendingImageUploadItemId: string | null = null;
   private resizeObserver?: ResizeObserver;
   private readonly colorValueCache = new Map<string, string>();
   private readonly canvasScenes = new Map<string, CanvasScene>();
@@ -806,13 +835,13 @@ export class HomeScreen extends LitElement {
     }
 
     .canvas-item[data-kind='button'] {
-      min-width: 240px;
+      min-width: 1px;
       min-height: 32px;
       cursor: grab;
     }
 
     .canvas-item[data-kind='button'][data-button-variant='icon-button'] {
-      min-width: 34px;
+      min-width: 1px;
       min-height: 34px;
       resize: none;
     }
@@ -829,6 +858,7 @@ export class HomeScreen extends LitElement {
     }
 
     .canvas-item[data-kind='typography'] {
+      min-width: min-content;
       min-height: 1px;
     }
 
@@ -862,6 +892,16 @@ export class HomeScreen extends LitElement {
       cursor: grabbing;
     }
 
+    .canvas-item[data-kind='image'] {
+      min-width: 48px;
+      min-height: 48px;
+      cursor: grab;
+    }
+
+    .canvas-item[data-kind='image']:active {
+      cursor: grabbing;
+    }
+
     .canvas-item[data-kind='container'] {
       min-width: 0;
       min-height: 1px;
@@ -882,6 +922,7 @@ export class HomeScreen extends LitElement {
       position: absolute;
       overflow: hidden;
       overscroll-behavior: contain;
+      z-index: 1;
     }
 
     .container-hover-tint {
@@ -891,9 +932,10 @@ export class HomeScreen extends LitElement {
       opacity: 0;
       pointer-events: none;
       transition: opacity 140ms ease;
+      z-index: 2;
     }
 
-    .canvas-item[data-kind='container']:hover .container-hover-tint {
+    .workspace[data-prototype-mode='false'] .canvas-item[data-kind='container']:hover .container-hover-tint {
       opacity: 1;
     }
 
@@ -2204,6 +2246,21 @@ export class HomeScreen extends LitElement {
         return { ...item, width: nextSize.width, height: nextSize.height };
       });
 
+      let didImageChange = false;
+      const nextImageItems = this.imageItems.map((item) => {
+        const nextSize = updates.get(item.id);
+        if (!nextSize) {
+          return item;
+        }
+
+        if (item.width === nextSize.width && item.height === nextSize.height) {
+          return item;
+        }
+
+        didImageChange = true;
+        return { ...item, width: nextSize.width, height: nextSize.height };
+      });
+
       if (didTypographyChange) {
         this.typographyItems = nextTypographyItems;
       }
@@ -2230,6 +2287,10 @@ export class HomeScreen extends LitElement {
 
       if (didMicroIllustrationChange) {
         this.microIllustrationItems = nextMicroIllustrationItems;
+      }
+
+      if (didImageChange) {
+        this.imageItems = nextImageItems;
       }
     });
   }
@@ -2260,6 +2321,7 @@ export class HomeScreen extends LitElement {
       desktopMenuItems: scene.desktopMenuItems.map((item) => ({ ...item })),
       logoItems: scene.logoItems.map((item) => ({ ...item })),
       microIllustrationItems: scene.microIllustrationItems.map((item) => ({ ...item })),
+      imageItems: scene.imageItems.map((item) => ({ ...item })),
       containerItems: scene.containerItems.map((item) => ({ ...item })),
       nextTypographyId: scene.nextTypographyId,
       nextButtonId: scene.nextButtonId,
@@ -2268,6 +2330,7 @@ export class HomeScreen extends LitElement {
       nextDesktopMenuId: scene.nextDesktopMenuId,
       nextLogoId: scene.nextLogoId,
       nextMicroIllustrationId: scene.nextMicroIllustrationId,
+      nextImageId: scene.nextImageId,
       nextContainerId: scene.nextContainerId,
       nextCanvasOrder: scene.nextCanvasOrder,
     };
@@ -2283,6 +2346,7 @@ export class HomeScreen extends LitElement {
       desktopMenuItems: [],
       logoItems: [],
       microIllustrationItems: [],
+      imageItems: [],
       containerItems: [],
       nextTypographyId: 1,
       nextButtonId: 1,
@@ -2291,6 +2355,7 @@ export class HomeScreen extends LitElement {
       nextDesktopMenuId: 1,
       nextLogoId: 1,
       nextMicroIllustrationId: 1,
+      nextImageId: 1,
       nextContainerId: 1,
       nextCanvasOrder: 1,
     };
@@ -2306,6 +2371,7 @@ export class HomeScreen extends LitElement {
       desktopMenuItems: this.desktopMenuItems,
       logoItems: this.logoItems,
       microIllustrationItems: this.microIllustrationItems,
+      imageItems: this.imageItems,
       containerItems: this.containerItems,
       nextTypographyId: this.nextTypographyId,
       nextButtonId: this.nextButtonId,
@@ -2314,6 +2380,7 @@ export class HomeScreen extends LitElement {
       nextDesktopMenuId: this.nextDesktopMenuId,
       nextLogoId: this.nextLogoId,
       nextMicroIllustrationId: this.nextMicroIllustrationId,
+      nextImageId: this.nextImageId,
       nextContainerId: this.nextContainerId,
       nextCanvasOrder: this.nextCanvasOrder,
     };
@@ -2454,6 +2521,7 @@ export class HomeScreen extends LitElement {
     this.desktopMenuItems = nextScene.desktopMenuItems;
     this.logoItems = nextScene.logoItems;
     this.microIllustrationItems = nextScene.microIllustrationItems;
+    this.imageItems = nextScene.imageItems;
     this.containerItems = nextScene.containerItems;
     this.nextTypographyId = nextScene.nextTypographyId;
     this.nextButtonId = nextScene.nextButtonId;
@@ -2462,6 +2530,7 @@ export class HomeScreen extends LitElement {
     this.nextDesktopMenuId = nextScene.nextDesktopMenuId;
     this.nextLogoId = nextScene.nextLogoId;
     this.nextMicroIllustrationId = nextScene.nextMicroIllustrationId;
+    this.nextImageId = nextScene.nextImageId;
     this.nextContainerId = nextScene.nextContainerId;
     this.nextCanvasOrder = nextScene.nextCanvasOrder;
   }
@@ -2676,6 +2745,7 @@ export class HomeScreen extends LitElement {
         order: this.nextCanvasOrder++,
         preset: this.toolTypographyPreset,
         align: 'left',
+        verticalAlign: 'top',
         bold: false,
         italic: false,
         color: 'var(--color-text)',
@@ -2727,6 +2797,7 @@ export class HomeScreen extends LitElement {
         label: 'Número de Tarjeta',
         value: '',
         icon: 'eye-off',
+        iconVisible: true,
         status: 'inactive',
       },
     ];
@@ -2818,6 +2889,7 @@ export class HomeScreen extends LitElement {
         order: this.nextCanvasOrder++,
         preset: 'benton-medium',
         align: 'left',
+        verticalAlign: 'center',
         bold: true,
         italic: false,
         color: 'var(--color-primary-strong)',
@@ -2834,6 +2906,7 @@ export class HomeScreen extends LitElement {
         order: this.nextCanvasOrder++,
         preset: 'benton-medium',
         align: 'left',
+        verticalAlign: 'center',
         bold: false,
         italic: false,
         color: 'var(--color-primary-strong)',
@@ -2850,6 +2923,7 @@ export class HomeScreen extends LitElement {
         order: this.nextCanvasOrder++,
         preset: 'benton-medium',
         align: 'left',
+        verticalAlign: 'center',
         bold: false,
         italic: false,
         color: 'var(--color-primary-strong)',
@@ -2866,6 +2940,7 @@ export class HomeScreen extends LitElement {
         order: this.nextCanvasOrder++,
         preset: 'benton-medium',
         align: 'left',
+        verticalAlign: 'center',
         bold: false,
         italic: false,
         color: 'var(--color-primary-strong)',
@@ -2936,6 +3011,7 @@ export class HomeScreen extends LitElement {
     this.editingIconId = null;
     this.editingLogoId = null;
     this.editingMicroIllustrationId = null;
+    this.editingImageId = null;
     this.editingContainerId = nextParentId;
     this.isCanvasEditing = false;
   }
@@ -2969,6 +3045,32 @@ export class HomeScreen extends LitElement {
         illustration: MICRO_ILLUSTRATION_OPTIONS[0].value,
       },
     ];
+  }
+
+  private createImageItem(x: number, y: number, parentId: string | null = null) {
+    const nextItem: CanvasImageItem = {
+      id: `image-${this.nextImageId++}`,
+      parentId,
+      x,
+      y,
+      width: 200,
+      height: 200,
+      order: this.nextCanvasOrder++,
+      src: '',
+      alt: 'Imagen',
+    };
+
+    this.imageItems = [...this.imageItems, nextItem];
+    this.selectedTypographyId = nextItem.id;
+    this.editingTypographyId = null;
+    this.editingButtonId = null;
+    this.editingIconId = null;
+    this.editingLogoId = null;
+    this.editingMicroIllustrationId = null;
+    this.editingImageId = nextItem.id;
+    this.editingContainerId = null;
+    this.isCanvasEditing = false;
+    this.requestImageUpload(nextItem.id);
   }
 
   private createContainerItem(
@@ -3012,6 +3114,7 @@ export class HomeScreen extends LitElement {
     this.editingIconId = null;
     this.editingLogoId = null;
     this.editingMicroIllustrationId = null;
+    this.editingImageId = null;
     this.editingContainerId = nextItem.id;
     this.isCanvasEditing = false;
   }
@@ -3148,10 +3251,15 @@ export class HomeScreen extends LitElement {
     );
   }
 
+  private get selectedImageItem() {
+    return this.imageItems.find((item) => item.id === this.selectedTypographyId) ?? null;
+  }
+
   private get isPanelEditingMode() {
     return Boolean(
       this.selectedTypographyItem ||
         this.selectedInputTextItem ||
+        (this.editingImageId && this.selectedImageItem) ||
         (this.editingMicroIllustrationId && this.selectedMicroIllustrationItem) ||
         (this.editingLogoId && this.selectedLogoItem) ||
         (this.editingIconId && this.selectedIconItem) ||
@@ -3232,6 +3340,9 @@ export class HomeScreen extends LitElement {
     scene.microIllustrationItems = this.microIllustrationItems
       .filter((item) => item.parentId && containerIds.has(item.parentId))
       .map((item) => ({ ...item }));
+    scene.imageItems = this.imageItems
+      .filter((item) => item.parentId && containerIds.has(item.parentId))
+      .map((item) => ({ ...item }));
 
     return scene;
   }
@@ -3282,6 +3393,10 @@ export class HomeScreen extends LitElement {
 
       if (kind === 'micro-illustration') {
         return `micro-${this.nextMicroIllustrationId++}`;
+      }
+
+      if (kind === 'image') {
+        return `image-${this.nextImageId++}`;
       }
 
       return `container-${this.nextContainerId++}`;
@@ -3382,6 +3497,15 @@ export class HomeScreen extends LitElement {
         order: orderMap.get(item.id)!,
       })),
     ];
+    this.imageItems = [
+      ...this.imageItems,
+      ...molecule.scene.imageItems.map((item) => ({
+        ...item,
+        id: idMap.get(item.id)!,
+        parentId: remapLeafParentId(item),
+        order: orderMap.get(item.id)!,
+      })),
+    ];
   }
 
   private openCreateComponentModal() {
@@ -3475,6 +3599,7 @@ export class HomeScreen extends LitElement {
       scene.desktopMenuItems.length > 0 ||
       scene.logoItems.length > 0 ||
       scene.microIllustrationItems.length > 0 ||
+      scene.imageItems.length > 0 ||
       scene.containerItems.length > 0
     );
   }
@@ -3495,6 +3620,7 @@ export class HomeScreen extends LitElement {
         kind: 'micro-illustration' as const,
         item,
       })),
+      ...scene.imageItems.map((item) => ({ kind: 'image' as const, item })),
       ...scene.containerItems.map((item) => ({ kind: 'container' as const, item })),
     ].sort((a, b) => a.item.order - b.item.order) as CanvasEntry[];
   }
@@ -3551,6 +3677,7 @@ export class HomeScreen extends LitElement {
             ...updates,
             label: (updates.label ?? item.label).trim() || 'Número de Tarjeta',
             icon: updates.icon ?? item.icon ?? 'eye-off',
+            iconVisible: updates.iconVisible ?? item.iconVisible ?? true,
             status: updates.status ?? item.status ?? 'inactive',
           }
         : item,
@@ -3691,6 +3818,10 @@ export class HomeScreen extends LitElement {
       return this.microIllustrationItems.find((item) => item.id === itemId)?.parentId ?? null;
     }
 
+    if (itemId.startsWith('image-')) {
+      return this.imageItems.find((item) => item.id === itemId)?.parentId ?? null;
+    }
+
     if (itemId.startsWith('container-')) {
       return this.containerItems.find((item) => item.id === itemId)?.parentId ?? null;
     }
@@ -3705,6 +3836,7 @@ export class HomeScreen extends LitElement {
     this.editingIconId = null;
     this.editingLogoId = null;
     this.editingMicroIllustrationId = null;
+    this.editingImageId = null;
     this.editingContainerId = null;
     this.isEditingSelectedContainerName = false;
     this.isCanvasEditing = false;
@@ -3730,9 +3862,9 @@ export class HomeScreen extends LitElement {
 
   private isEditableFieldTarget(target: EventTarget | null) {
     return (
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement ||
+      (target instanceof HTMLInputElement && !target.readOnly && !target.disabled) ||
+      (target instanceof HTMLTextAreaElement && !target.readOnly && !target.disabled) ||
+      (target instanceof HTMLSelectElement && !target.disabled) ||
       (target instanceof HTMLElement && target.isContentEditable)
     );
   }
@@ -3813,6 +3945,13 @@ export class HomeScreen extends LitElement {
       return;
     }
 
+    if (this.selectedTypographyId.startsWith('image-')) {
+      this.imageItems = this.imageItems.filter((item) => item.id !== this.selectedTypographyId);
+      this.clearActiveEditingState();
+      event.preventDefault();
+      return;
+    }
+
     if (this.selectedTypographyId.startsWith('container-')) {
       const containerIdsToDelete = new Set([
         this.selectedTypographyId,
@@ -3838,6 +3977,9 @@ export class HomeScreen extends LitElement {
         (item) => !item.parentId || !containerIdsToDelete.has(item.parentId),
       );
       this.microIllustrationItems = this.microIllustrationItems.filter(
+        (item) => !item.parentId || !containerIdsToDelete.has(item.parentId),
+      );
+      this.imageItems = this.imageItems.filter(
         (item) => !item.parentId || !containerIdsToDelete.has(item.parentId),
       );
       this.containerItems = this.containerItems.filter(
@@ -3939,6 +4081,11 @@ export class HomeScreen extends LitElement {
       return;
     }
 
+    if (event.detail.tool === 'image') {
+      this.createImageItem(parentId ? 16 : 24, parentId ? 16 : 24, parentId);
+      return;
+    }
+
     if (event.detail.tool === 'contenedor') {
       this.createContainerItem(24);
     }
@@ -3960,6 +4107,7 @@ export class HomeScreen extends LitElement {
       this.editingIconId = null;
       this.editingLogoId = null;
       this.editingMicroIllustrationId = null;
+      this.editingImageId = null;
       this.editingContainerId = null;
       this.isCanvasEditing = false;
     }
@@ -3983,6 +4131,7 @@ export class HomeScreen extends LitElement {
     this.editingIconId = itemId.startsWith('icon-') ? itemId : null;
     this.editingLogoId = itemId.startsWith('logo-') ? itemId : null;
     this.editingMicroIllustrationId = itemId.startsWith('micro-') ? itemId : null;
+    this.editingImageId = itemId.startsWith('image-') ? itemId : null;
     this.editingContainerId = itemId.startsWith('container-') ? itemId : null;
   }
 
@@ -4223,6 +4372,9 @@ export class HomeScreen extends LitElement {
     this.microIllustrationItems = this.microIllustrationItems.map((item) =>
       item.id === this.dragState?.id ? { ...item, x: nextX, y: nextY } : item,
     );
+    this.imageItems = this.imageItems.map((item) =>
+      item.id === this.dragState?.id ? { ...item, x: nextX, y: nextY } : item,
+    );
     this.containerItems = this.containerItems.map((item) => {
       if (item.id !== this.dragState?.id) {
         return item;
@@ -4298,6 +4450,27 @@ export class HomeScreen extends LitElement {
     this.microIllustrationItems = this.microIllustrationItems.map((item) =>
       item.id === this.dragState?.id
         ? { ...item, parentId: dropContainer.container.id, x: nextX, y: nextY }
+        : item,
+    );
+    this.imageItems = this.imageItems.map((item) =>
+      item.id === this.dragState?.id
+        ? { ...item, parentId: dropContainer.container.id, x: nextX, y: nextY }
+        : item,
+    );
+  }
+
+  private updateSelectedImageItem(updates: Partial<CanvasImageItem>) {
+    if (!this.selectedTypographyId) {
+      return;
+    }
+
+    this.imageItems = this.imageItems.map((item) =>
+      item.id === this.selectedTypographyId
+        ? {
+            ...item,
+            ...updates,
+            alt: (updates.alt ?? item.alt).trim() || 'Imagen',
+          }
         : item,
     );
   }
@@ -4408,6 +4581,7 @@ export class HomeScreen extends LitElement {
     this.editingIconId = null;
     this.editingLogoId = null;
     this.editingMicroIllustrationId = null;
+    this.editingImageId = null;
     this.editingContainerId = null;
     this.isCanvasEditing = false;
   }
@@ -4416,10 +4590,103 @@ export class HomeScreen extends LitElement {
     this.updateSelectedTypographyItem({ align });
   }
 
+  private setSelectedVerticalAlignment(verticalAlign: TypographyVerticalAlign) {
+    this.updateSelectedTypographyItem({ verticalAlign });
+  }
+
   private preserveInlineTypographySelection(event: MouseEvent) {
     if (this.editingTypographyId === this.selectedTypographyId) {
       event.preventDefault();
+      this.getEditingTypographyElement()?.captureSelection?.();
     }
+  }
+
+  private createTypographyMarkupHost(text: string) {
+    const host = document.createElement('div');
+    if (text.includes('<') || text.includes('&')) {
+      host.innerHTML = text;
+    } else {
+      host.textContent = text;
+    }
+
+    return host;
+  }
+
+  private normalizeTypographyLinkHref(href: string) {
+    const trimmed = href.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://') ||
+      trimmed.startsWith('mailto:') ||
+      trimmed.startsWith('tel:') ||
+      trimmed.startsWith('/') ||
+      trimmed.startsWith('#')
+    ) {
+      return trimmed;
+    }
+
+    return `https://${trimmed}`;
+  }
+
+  private getTypographyLinkHref(text: string) {
+    const host = this.createTypographyMarkupHost(text);
+    return host.querySelector('a')?.getAttribute('href') ?? '';
+  }
+
+  private stripTypographyLinks(text: string) {
+    const host = this.createTypographyMarkupHost(text);
+    host.querySelectorAll('a').forEach((anchor) => {
+      anchor.replaceWith(...Array.from(anchor.childNodes));
+    });
+    return host.innerHTML;
+  }
+
+  private setTypographyLinkHref(text: string, href: string) {
+    const normalizedHref = this.normalizeTypographyLinkHref(href);
+    if (!normalizedHref) {
+      return this.stripTypographyLinks(text);
+    }
+
+    const host = this.createTypographyMarkupHost(text);
+    const anchors = Array.from(host.querySelectorAll('a'));
+
+    if (anchors.length === 0) {
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', normalizedHref);
+      anchor.setAttribute('target', '_blank');
+      anchor.setAttribute('rel', 'noreferrer noopener');
+
+      while (host.firstChild) {
+        anchor.append(host.firstChild);
+      }
+
+      host.append(anchor);
+      return host.innerHTML;
+    }
+
+    anchors.forEach((anchor) => {
+      anchor.setAttribute('href', normalizedHref);
+      anchor.setAttribute('target', '_blank');
+      anchor.setAttribute('rel', 'noreferrer noopener');
+    });
+
+    return host.innerHTML;
+  }
+
+  private get selectedTypographyLinkHref() {
+    if (!this.selectedTypographyItem) {
+      return '';
+    }
+
+    return this.getTypographyLinkHref(this.selectedTypographyItem.text);
+  }
+
+  private get selectedTypographyHasLink() {
+    return this.selectedTypographyLinkHref.length > 0;
   }
 
   private getEditingTypographyElement() {
@@ -4430,6 +4697,7 @@ export class HomeScreen extends LitElement {
     return this.renderRoot.querySelector(
       `[data-item-id="${this.editingTypographyId}"] canvas-tipografia`,
     ) as (HTMLElement & {
+      captureSelection?: () => void;
       applyInlineFormat?: (command: InlineTypographyFormat) => string | null;
     }) | null;
   }
@@ -4444,6 +4712,36 @@ export class HomeScreen extends LitElement {
 
     this.updateSelectedTypographyItem({ text: nextMarkup });
     return true;
+  }
+
+  private handleSelectedTypographyLinkToggle(event: Event) {
+    if (!this.selectedTypographyItem) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    if (input.checked) {
+      const nextHref = this.selectedTypographyLinkHref || 'https://';
+      this.updateSelectedTypographyItem({
+        text: this.setTypographyLinkHref(this.selectedTypographyItem.text, nextHref),
+      });
+      return;
+    }
+
+    this.updateSelectedTypographyItem({
+      text: this.stripTypographyLinks(this.selectedTypographyItem.text),
+    });
+  }
+
+  private handleSelectedTypographyLinkInput(event: Event) {
+    if (!this.selectedTypographyItem) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    this.updateSelectedTypographyItem({
+      text: this.setTypographyLinkHref(this.selectedTypographyItem.text, input.value),
+    });
   }
 
   private toggleSelectedBold() {
@@ -4524,6 +4822,62 @@ export class HomeScreen extends LitElement {
   private handleSelectedInputStatusChange(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.updateSelectedInputTextItem({ status: select.value as 'active' | 'inactive' });
+  }
+
+  private handleSelectedInputIconVisibilityChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    this.updateSelectedInputTextItem({ iconVisible: select.value === 'visible' });
+  }
+
+  private requestImageUpload(itemId: string) {
+    this.pendingImageUploadItemId = itemId;
+    const input = this.renderRoot.querySelector<HTMLInputElement>('.image-upload-input');
+    if (!input) {
+      return;
+    }
+
+    input.value = '';
+    input.click();
+  }
+
+  private handleSelectedImageUploadClick = () => {
+    if (!this.selectedImageItem) {
+      return;
+    }
+
+    this.requestImageUpload(this.selectedImageItem.id);
+  };
+
+  private handleImageUploadChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    const itemId = this.pendingImageUploadItemId;
+    this.pendingImageUploadItemId = null;
+
+    if (!file || !itemId) {
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      if (!result) {
+        return;
+      }
+
+      this.imageItems = this.imageItems.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              src: result,
+              alt: file.name || item.alt,
+            }
+          : item,
+      );
+    });
+    reader.readAsDataURL(file);
+    input.value = '';
   }
 
   private handleSelectedContainerDesktopSpanChange(event: Event) {
@@ -4986,6 +5340,7 @@ export class HomeScreen extends LitElement {
               .preset=${this.toolTypographyPreset}
               .text=${'Texto de ejemplo'}
               .align=${'left'}
+              .verticalAlign=${'top'}
               .bold=${false}
               .italic=${false}
               .color=${'var(--color-text)'}
@@ -5016,6 +5371,7 @@ export class HomeScreen extends LitElement {
               .label=${'Número de Tarjeta'}
               .value=${''}
               .icon=${'eye-off'}
+              .iconVisible=${true}
               .status=${'inactive'}
               .enabled=${false}
             ></canvas-input-text>
@@ -5091,6 +5447,16 @@ export class HomeScreen extends LitElement {
             <canvas-micro-illustration
               .illustration=${MICRO_ILLUSTRATION_OPTIONS[0].value}
             ></canvas-micro-illustration>
+          </div>
+        </div>
+      `;
+    }
+
+    if (this.selectedToolPreview === 'image') {
+      return html`
+        <div class="preview-canvas">
+          <div style="width:120px; height:120px;">
+            <canvas-image></canvas-image>
           </div>
         </div>
       `;
@@ -5239,12 +5605,27 @@ export class HomeScreen extends LitElement {
   }
 
   private buildTypographyCode(item: CanvasTypographyItem) {
-    const style = [
+    const verticalJustify =
+      item.verticalAlign === 'center'
+        ? 'center'
+        : item.verticalAlign === 'bottom'
+          ? 'flex-end'
+          : 'flex-start';
+
+    const wrapperStyle = [
       'position: absolute',
       `left: ${Math.round(item.x)}px`,
       `top: ${Math.round(item.y)}px`,
       `width: ${Math.round(item.width)}px`,
       `height: ${Math.round(item.height)}px`,
+      'display: flex',
+      'flex-direction: column',
+      `justify-content: ${verticalJustify}`,
+      'box-sizing: border-box',
+      'overflow: hidden',
+    ].join('; ');
+
+    const style = [
       `font-family: ${this.getFontFamilyForPreset(item.preset)}`,
       `font-size: ${item.fontSize}px`,
       `color: ${item.color}`,
@@ -5258,7 +5639,7 @@ export class HomeScreen extends LitElement {
       'margin: 0',
     ].join('; ');
 
-    return `  <p style="${style}">${this.getTypographyMarkup(item)}</p>`;
+    return `  <div style="${wrapperStyle}"><p style="${style}">${this.getTypographyMarkup(item)}</p></div>`;
   }
 
   private buildButtonCode(item: CanvasButtonItem) {
@@ -5285,7 +5666,7 @@ export class HomeScreen extends LitElement {
         ? ` data-action="${this.escapeCodeText(item.action)}"`
         : '';
 
-      return `  <button type="button" style="${style}"${actionAttribute}><svg viewBox="${icon.viewBox}" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;display:block;color:var(--color-primary-strong);">${icon.body}</svg></button>`;
+      return `  <button type="button" style="${style}"${actionAttribute}><svg viewBox="${icon.viewBox}" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;display:block;color:var(--color-primary-strong);">${colorizeIconBody(icon.body)}</svg></button>`;
     }
 
     const background =
@@ -5310,7 +5691,7 @@ export class HomeScreen extends LitElement {
       `height: ${Math.round(item.height)}px`,
       'box-sizing: border-box',
       'border: none',
-      'border-radius: 18px',
+      'border-radius: 16px',
       `background: ${background}`,
       `color: ${color}`,
       "font-family: 'Benton Sans BBVA', sans-serif",
@@ -5333,6 +5714,8 @@ export class HomeScreen extends LitElement {
     const icon =
       ICON_OPTIONS.find((option) => option.value === (item.icon ?? 'eye-off')) ?? ICON_OPTIONS[0];
     const isFloating = item.value.trim().length > 0 || (item.status ?? 'inactive') === 'active';
+    const iconVisible = item.iconVisible ?? true;
+    const hasActions = item.value.trim().length > 0 || iconVisible;
     const wrapperStyle = [
       'position: absolute',
       `left: ${Math.round(item.x)}px`,
@@ -5345,7 +5728,7 @@ export class HomeScreen extends LitElement {
       'background: var(--color-surface)',
       'padding: 8px 14px 8px 18px',
       'display: grid',
-      'grid-template-columns: minmax(0, 1fr) auto',
+      `grid-template-columns: ${hasActions ? 'minmax(0, 1fr) auto' : 'minmax(0, 1fr)'}`,
       'align-items: center',
       'gap: 12px',
     ].join('; ');
@@ -5413,12 +5796,14 @@ export class HomeScreen extends LitElement {
       `      <span style="${labelStyle}">${this.escapeCodeText(item.label)}</span>`,
       `      <input type="text" value="${this.escapeCodeText(item.value)}" style="${inputStyle}" />`,
       `    </div>`,
-      `    <div style="${actionsStyle}">`,
+      hasActions ? `    <div style="${actionsStyle}">` : '',
       item.value.trim().length > 0
         ? `      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="${clearStyle}"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" /></svg>`
         : '',
-      `      <svg viewBox="${icon.viewBox}" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="${iconStyle}">${icon.body}</svg>`,
-      `    </div>`,
+      iconVisible
+        ? `      <svg viewBox="${icon.viewBox}" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="${iconStyle}">${colorizeIconBody(icon.body)}</svg>`
+        : '',
+      hasActions ? `    </div>` : '',
       `  </label>`,
     ]
       .filter(Boolean)
@@ -5436,7 +5821,7 @@ export class HomeScreen extends LitElement {
       `color: ${this.normalizeColorValue(item.color ?? 'var(--color-primary-strong)')}`,
     ].join('; ');
 
-    return `  <div style="${style}"><svg viewBox="${icon.viewBox}" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">${icon.body}</svg></div>`;
+    return `  <div style="${style}"><svg viewBox="${icon.viewBox}" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">${colorizeIconBody(icon.body)}</svg></div>`;
   }
 
   private buildDesktopMenuCode(item: CanvasDesktopMenuItem): string {
@@ -5526,6 +5911,28 @@ export class HomeScreen extends LitElement {
     return `  <img src="${illustration.src}" alt="${illustration.label}" style="${style}" />`;
   }
 
+  private buildImageCode(item: CanvasImageItem): string {
+    const style = [
+      'position: absolute',
+      `left: ${Math.round(item.x)}px`,
+      `top: ${Math.round(item.y)}px`,
+      `width: ${Math.round(item.width)}px`,
+      `height: ${Math.round(item.height)}px`,
+      'display: block',
+      'border-radius: 16px',
+      'overflow: hidden',
+      'background: linear-gradient(180deg, rgba(19, 30, 68, 0.1), rgba(19, 30, 68, 0.06))',
+      'border: 1px solid rgba(19, 30, 68, 0.14)',
+      'box-sizing: border-box',
+    ].join('; ');
+
+    if (!item.src) {
+      return `  <div style="${style}"></div>`;
+    }
+
+    return `  <img src="${item.src}" alt="${this.escapeCodeText(item.alt || 'Imagen')}" style="${style};object-fit:cover;" />`;
+  }
+
   private buildCanvasEntryCode(entry: CanvasEntry): string {
     if (entry.kind === 'typography') {
       return this.buildTypographyCode(entry.item);
@@ -5553,6 +5960,10 @@ export class HomeScreen extends LitElement {
 
     if (entry.kind === 'micro-illustration') {
       return this.buildMicroIllustrationCode(entry.item);
+    }
+
+    if (entry.kind === 'image') {
+      return this.buildImageCode(entry.item);
     }
 
     return this.buildContainerCode(entry.item);
@@ -5636,6 +6047,7 @@ export class HomeScreen extends LitElement {
       draggedTool !== 'desktop-menu' &&
       draggedTool !== 'logo' &&
       draggedTool !== 'micro-illustration' &&
+      draggedTool !== 'image' &&
       draggedTool !== 'contenedor' &&
       !draggedTool.startsWith('custom-molecule:')
     ) {
@@ -5892,6 +6304,23 @@ export class HomeScreen extends LitElement {
       return;
     }
 
+    if (tool === 'image') {
+      const itemWidth = 200;
+      const itemHeight = 200;
+      const hostRect = dropContainer?.rect ?? rect;
+      const x = Math.max(
+        0,
+        Math.min(hostRect.width - itemWidth, event.clientX - hostRect.left - itemWidth / 2),
+      );
+      const y = Math.max(
+        0,
+        Math.min(hostRect.height - itemHeight, event.clientY - hostRect.top - itemHeight / 2),
+      );
+
+      this.createImageItem(x, y, dropContainer?.container.id ?? null);
+      return;
+    }
+
     if (tool === 'contenedor') {
       const columns = this.getGridColumns();
       const span = this.viewport === 'mobile' ? 4 : 6;
@@ -5996,11 +6425,13 @@ export class HomeScreen extends LitElement {
             .preset=${item.preset}
             .text=${item.text}
             .align=${item.align}
+            .verticalAlign=${item.verticalAlign ?? 'top'}
             .bold=${item.bold}
             .italic=${item.italic}
             .color=${item.color}
             .fontSize=${item.fontSize}
             .editing=${interactive && this.editingTypographyId === item.id}
+            .linksEnabled=${allowNativeInputInteraction}
           ></canvas-tipografia>
         </div>
       `;
@@ -6057,6 +6488,7 @@ export class HomeScreen extends LitElement {
           @pointerdown=${interactive
             ? (event: PointerEvent) => {
                 if (
+                  allowNativeInputInteraction &&
                   event.composedPath().some(
                     (target) =>
                       target instanceof HTMLInputElement ||
@@ -6087,6 +6519,7 @@ export class HomeScreen extends LitElement {
             .label=${item.label}
             .value=${item.value}
             .icon=${item.icon ?? 'eye-off'}
+            .iconVisible=${item.iconVisible ?? true}
             .status=${item.status ?? 'inactive'}
             .enabled=${allowNativeInputInteraction}
           ></canvas-input-text>
@@ -6227,6 +6660,39 @@ export class HomeScreen extends LitElement {
           <canvas-micro-illustration
             .illustration=${item.illustration}
           ></canvas-micro-illustration>
+        </div>
+      `;
+    }
+
+    if (entry.kind === 'image') {
+      const item = entry.item;
+      const isSelected = interactive && this.selectedTypographyId === item.id;
+
+      return html`
+        <div
+          class="canvas-item"
+          data-kind="image"
+          data-item-id=${interactive ? item.id : nothing}
+          data-selected=${String(isSelected)}
+          style=${`left:${item.x}px; top:${item.y}px; width:${item.width}px; height:${item.height}px;`}
+          @dblclick=${interactive
+            ? (event: MouseEvent) => {
+                event.stopPropagation();
+                this.handleCanvasItemDoubleClick(item.id);
+              }
+            : nothing}
+          @pointerdown=${interactive
+            ? (event: PointerEvent) => {
+                event.stopPropagation();
+                this.handleCanvasItemPointerDown(event, item.id);
+              }
+            : nothing}
+        >
+          <span class="handle top-left"></span>
+          <span class="handle top-right"></span>
+          <span class="handle bottom-left"></span>
+          <span class="handle bottom-right"></span>
+          <canvas-image .src=${item.src} .alt=${item.alt}></canvas-image>
         </div>
       `;
     }
@@ -6700,6 +7166,39 @@ export class HomeScreen extends LitElement {
                     </div>
 
                     <div class="editor-row">
+                      <p class="editor-label">Alineacion vertical</p>
+                      <div class="editor-actions">
+                        <button
+                          class="editor-button"
+                          data-active=${String((this.selectedTypographyItem.verticalAlign ?? 'top') === 'top')}
+                          @click=${() => this.setSelectedVerticalAlignment('top')}
+                          aria-label="Alinear arriba"
+                          title="Alinear arriba"
+                        >
+                          Arriba
+                        </button>
+                        <button
+                          class="editor-button"
+                          data-active=${String((this.selectedTypographyItem.verticalAlign ?? 'top') === 'center')}
+                          @click=${() => this.setSelectedVerticalAlignment('center')}
+                          aria-label="Centrar verticalmente"
+                          title="Centrar verticalmente"
+                        >
+                          Centro
+                        </button>
+                        <button
+                          class="editor-button"
+                          data-active=${String((this.selectedTypographyItem.verticalAlign ?? 'top') === 'bottom')}
+                          @click=${() => this.setSelectedVerticalAlignment('bottom')}
+                          aria-label="Alinear abajo"
+                          title="Alinear abajo"
+                        >
+                          Abajo
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="editor-row">
                       <p class="editor-label">Color</p>
                       ${this.renderColorDropdown('text', TEXT_COLOR_OPTIONS, this.selectedTypographyItem.color, (value) =>
                         this.updateSelectedTypographyItem({ color: value }),
@@ -6727,6 +7226,36 @@ export class HomeScreen extends LitElement {
                         </button>
                       </div>
                     </div>
+
+                    <div class="editor-row">
+                      <div class="editor-switch-row">
+                        <p class="editor-label">Link</p>
+                        <label class="editor-switch" aria-label="Activar link en texto">
+                          <input
+                            class="editor-switch-input"
+                            type="checkbox"
+                            .checked=${this.selectedTypographyHasLink}
+                            @change=${this.handleSelectedTypographyLinkToggle}
+                          />
+                          <span class="editor-switch-track"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    ${this.selectedTypographyHasLink
+                      ? html`
+                          <div class="editor-row">
+                            <p class="editor-label">URL</p>
+                            <input
+                              class="editor-input"
+                              type="text"
+                              .value=${this.selectedTypographyLinkHref}
+                              placeholder="https://"
+                              @input=${this.handleSelectedTypographyLinkInput}
+                            />
+                          </div>
+                        `
+                      : nothing}
 
                     <div class="editor-row">
                       <div class="editor-range-wrap">
@@ -6767,12 +7296,26 @@ export class HomeScreen extends LitElement {
                         </div>
 
                         <div class="editor-row">
+                          <p class="editor-label">Mostrar icono</p>
+                          <select
+                            class="editor-select"
+                            .value=${(this.selectedInputTextItem.iconVisible ?? true) ? 'visible' : 'hidden'}
+                            @change=${this.handleSelectedInputIconVisibilityChange}
+                          >
+                            <option value="visible">Visible</option>
+                            <option value="hidden">Oculto</option>
+                          </select>
+                        </div>
+
+                        ${(this.selectedInputTextItem.iconVisible ?? true)
+                          ? html`<div class="editor-row">
                           <p class="editor-label">Icono</p>
                           ${this.renderIconDropdown(
                             this.selectedInputTextItem.icon ?? 'eye-off',
                             (value) => this.updateSelectedInputTextItem({ icon: value }),
                           )}
-                        </div>
+                        </div>`
+                          : nothing}
 
                         <div class="editor-row">
                           <p class="editor-label">Status</p>
@@ -6822,6 +7365,37 @@ export class HomeScreen extends LitElement {
                           this.selectedMicroIllustrationItem.illustration,
                           (value) => this.updateSelectedMicroIllustrationItem({ illustration: value }),
                         )}
+                      </div>
+                    </div>
+                  </div>
+                `
+              : this.editingImageId && this.selectedImageItem
+                ? html`
+                  <div class="tool-group">
+                    <h3 class="section-title">Imagen seleccionada</h3>
+                    <div class="editor-stack">
+                      <div class="editor-row">
+                        <p class="editor-label">Archivo</p>
+                        <button
+                          class="editor-button"
+                          type="button"
+                          @click=${this.handleSelectedImageUploadClick}
+                        >
+                          ${this.selectedImageItem.src ? 'Reemplazar imagen' : 'Subir imagen'}
+                        </button>
+                      </div>
+                      <div class="editor-row">
+                        <p class="editor-label">Alt</p>
+                        <input
+                          class="editor-input"
+                          type="text"
+                          .value=${this.selectedImageItem.alt}
+                          placeholder="Imagen"
+                          @input=${(event: Event) =>
+                            this.updateSelectedImageItem({
+                              alt: (event.target as HTMLInputElement).value,
+                            })}
+                        />
                       </div>
                     </div>
                   </div>
@@ -7427,6 +8001,14 @@ export class HomeScreen extends LitElement {
                           ></tool-input-text>
                         </div>
                         <div class="tool-preview-anchor">
+                          ${this.renderToolPreviewPopover('image')}
+                          <tool-image
+                            .selected=${this.selectedToolPreview === 'image'}
+                            @tool-drag-state=${this.handleToolDragState}
+                            @preview-tool=${this.handleToolPreview}
+                          ></tool-image>
+                        </div>
+                        <div class="tool-preview-anchor">
                           ${this.renderToolPreviewPopover('main-button')}
                           <tool-main-button
                             .selected=${this.selectedToolPreview === 'main-button'}
@@ -7497,6 +8079,14 @@ export class HomeScreen extends LitElement {
                 </div>
               `}
         </aside>
+
+        <input
+          class="image-upload-input"
+          type="file"
+          accept="image/*"
+          hidden
+          @change=${this.handleImageUploadChange}
+        />
 
         ${this.isCreateComponentModalOpen
           ? html`

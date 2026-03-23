@@ -3,7 +3,16 @@ export type MicroIllustrationName =
   | 'dollar-large'
   | 'credit-card'
   | 'saving-dollar'
-  | 'security';
+  | 'security'
+  | 'qr-glass'
+  | 'lightning'
+  | 'solar-panel'
+  | 'money-simulator'
+  | 'payment-device-euro'
+  | 'products-bancomer-opportunity-menu'
+  | 'home-loan-opportunity-menu'
+  | 'tc-start-menu'
+  | 'future-investment-opportunity-menu';
 
 export type MicroIllustrationOption = {
   value: MicroIllustrationName;
@@ -36,5 +45,50 @@ export const MICRO_ILLUSTRATION_OPTIONS: MicroIllustrationOption[] = [
     value: 'security',
     label: 'Security',
     src: 'https://www.bbva.mx/content/dam/library/micros/security-glass.im1749056059319im.png?imwidth=960',
+  },
+  {
+    value: 'qr-glass',
+    label: 'QR Glass',
+    src: 'https://www.bbva.mx/solicitar-tarjeta-de-credito/resources/assets/qr-glass.png',
+  },
+  {
+    value: 'lightning',
+    label: 'Lightning',
+    src: 'https://www.bbva.mx/content/dam/library/micros/lightning-glass.im1744217483781im.png?imwidth=1176',
+  },
+  {
+    value: 'solar-panel',
+    label: 'Solar Panel',
+    src: 'https://www.bbva.mx/content/dam/library/micros/solar-panel-glass.im1744217610720im.png?imwidth=1176',
+  },
+  {
+    value: 'money-simulator',
+    label: 'Money Simulator',
+    src: 'https://www.bbva.mx/content/dam/library/micros/micro-tool-company-money-simulator-glass.im1747423528778im.png?imwidth=1176',
+  },
+  {
+    value: 'payment-device-euro',
+    label: 'Payment Device Euro',
+    src: 'https://www.bbva.mx/content/dam/library/micros/digital-payment-device-euro-glass.im1747672232450im.png?imwidth=1176',
+  },
+  {
+    value: 'products-bancomer-opportunity-menu',
+    label: 'Products Bancomer Opportunity Menu',
+    src: 'https://www.bbva.mx/content/dam/library/micros/products-bancomer-opportunity-menu-glass.im1746789950017im.png?imwidth=768',
+  },
+  {
+    value: 'home-loan-opportunity-menu',
+    label: 'Home Loan Opportunity Menu',
+    src: 'https://www.bbva.mx/content/dam/library/micros/home-loan-opportunity-menu-glass.im1746467373358im.png?imwidth=768',
+  },
+  {
+    value: 'tc-start-menu',
+    label: 'TC Start Menu',
+    src: 'https://www.bbva.mx/content/dam/public-web/mexico/images/tc-start-menu-001.im1771357246080im.png?imwidth=1176',
+  },
+  {
+    value: 'future-investment-opportunity-menu',
+    label: 'Future Investment Opportunity Menu',
+    src: 'https://www.bbva.mx/content/dam/library/micros/future-investment-opportunity-menu-glass.im1746467373002im.png?imwidth=768',
   },
 ];

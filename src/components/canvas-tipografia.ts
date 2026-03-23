@@ -9,6 +9,7 @@ export type TypographyPreset =
   | 'tiempos-headline';
 
 export type TypographyAlign = 'left' | 'center' | 'right';
+export type TypographyVerticalAlign = 'top' | 'center' | 'bottom';
 
 export const TYPOGRAPHY_PRESET_OPTIONS: Array<{ value: TypographyPreset; label: string }> = [
   { value: 'benton-book', label: 'Benton Sans Book' },
@@ -34,6 +35,9 @@ export class CanvasTipografia extends LitElement {
   @property({ type: String })
   align: TypographyAlign = 'left';
 
+  @property({ type: String })
+  verticalAlign: TypographyVerticalAlign = 'top';
+
   @property({ type: Boolean })
   bold = false;
 
@@ -45,6 +49,11 @@ export class CanvasTipografia extends LitElement {
 
   @property({ type: Boolean })
   editing = false;
+
+  @property({ type: Boolean })
+  linksEnabled = false;
+
+  private savedSelectionRange: Range | null = null;
 
   private get computedFontWeight() {
     const baseWeight = this.preset === 'benton-book' ? 400 : this.preset === 'tiempos-headline' ? 700 : 500;
@@ -61,6 +70,18 @@ export class CanvasTipografia extends LitElement {
     }
 
     return this.italic ? 'italic' : 'normal';
+  }
+
+  private get computedJustifyContent() {
+    if (this.verticalAlign === 'center') {
+      return 'center';
+    }
+
+    if (this.verticalAlign === 'bottom') {
+      return 'flex-end';
+    }
+
+    return 'flex-start';
   }
 
   private get editorElement() {
@@ -96,14 +117,124 @@ export class CanvasTipografia extends LitElement {
     );
   }
 
+  captureSelection() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || !this.hasSelectionInsideEditor()) {
+      return;
+    }
+
+    this.savedSelectionRange = selection.getRangeAt(0).cloneRange();
+  }
+
+  private restoreSavedSelection() {
+    const editor = this.editorElement;
+    const selection = window.getSelection();
+
+    if (!editor || !selection || !this.savedSelectionRange) {
+      return;
+    }
+
+    editor.focus();
+    selection.removeAllRanges();
+    selection.addRange(this.savedSelectionRange);
+  }
+
+  private normalizeLinkHref(href: string) {
+    const trimmed = href.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://') ||
+      trimmed.startsWith('mailto:') ||
+      trimmed.startsWith('tel:') ||
+      trimmed.startsWith('/') ||
+      trimmed.startsWith('#')
+    ) {
+      return trimmed;
+    }
+
+    return `https://${trimmed}`;
+  }
+
+  private findSelectionLink() {
+    const editor = this.editorElement;
+    const selection = window.getSelection();
+
+    if (!editor || !selection || selection.rangeCount === 0) {
+      return null;
+    }
+
+    const range = selection.getRangeAt(0);
+    const nodes = [selection.anchorNode, selection.focusNode, range.commonAncestorContainer];
+
+    for (const node of nodes) {
+      if (!node) {
+        continue;
+      }
+
+      const element = node instanceof HTMLAnchorElement ? node : node.parentElement?.closest('a');
+      if (element && editor.contains(element)) {
+        return element;
+      }
+    }
+
+    return null;
+  }
+
   applyInlineFormat(command: 'bold' | 'italic') {
     const editor = this.editorElement;
-    if (!editor || !this.editing || !this.hasSelectionInsideEditor()) {
+    if (!editor || !this.editing) {
+      return null;
+    }
+
+    if (!this.hasSelectionInsideEditor() && this.savedSelectionRange) {
+      this.restoreSavedSelection();
+    }
+
+    if (!this.hasSelectionInsideEditor()) {
       return null;
     }
 
     editor.focus();
     document.execCommand(command);
+    this.captureSelection();
+    return this.normalizeMarkup(editor.innerHTML);
+  }
+
+  applyLink(href: string) {
+    const editor = this.editorElement;
+    if (!editor || !this.editing) {
+      return null;
+    }
+
+    const normalizedHref = this.normalizeLinkHref(href);
+    if (!normalizedHref) {
+      return null;
+    }
+
+    if (!this.hasSelectionInsideEditor() && this.savedSelectionRange) {
+      this.restoreSavedSelection();
+    }
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed || !this.hasSelectionInsideEditor()) {
+      return null;
+    }
+
+    editor.focus();
+    document.execCommand('createLink', false, normalizedHref);
+
+    const link = this.findSelectionLink();
+    if (link) {
+      link.setAttribute('href', normalizedHref);
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noreferrer noopener');
+    }
+
+    this.captureSelection();
     return this.normalizeMarkup(editor.innerHTML);
   }
 
@@ -121,6 +252,7 @@ export class CanvasTipografia extends LitElement {
       range.collapse(false);
       selection?.removeAllRanges();
       selection?.addRange(range);
+      this.savedSelectionRange = range.cloneRange();
     }
   }
 
@@ -146,6 +278,57 @@ export class CanvasTipografia extends LitElement {
         },
       }),
     );
+
+    this.savedSelectionRange = null;
+  }
+
+  private insertPlainText(text: string) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  private handlePaste(event: ClipboardEvent) {
+    if (!this.editing) {
+      return;
+    }
+
+    const text = event.clipboardData?.getData('text/plain');
+    if (text === undefined) {
+      return;
+    }
+
+    event.preventDefault();
+    this.editorElement?.focus();
+
+    if (!document.execCommand('insertText', false, text)) {
+      this.insertPlainText(text);
+    }
+  }
+
+  private handleLinkClick(event: MouseEvent) {
+    if (this.linksEnabled || this.editing) {
+      return;
+    }
+
+    const path = event.composedPath();
+    const clickedLink = path.find((node) => node instanceof HTMLAnchorElement);
+    if (!clickedLink) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   static styles = css`
@@ -160,16 +343,19 @@ export class CanvasTipografia extends LitElement {
       height: 100%;
       box-sizing: border-box;
       padding: 0;
-      display: grid;
-      align-content: start;
-      justify-items: stretch;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
     }
 
     .sample {
+      display: block;
       margin: 0;
       padding: 0;
       line-height: 0.95;
-      width: 100%;
+      width: max-content;
+      min-width: 100%;
       user-select: none;
       outline: none;
       white-space: nowrap;
@@ -182,10 +368,22 @@ export class CanvasTipografia extends LitElement {
     .sample[contenteditable='true'] {
       user-select: text;
       cursor: text;
+      width: 100%;
       white-space: pre-wrap;
       overflow: visible;
       text-overflow: clip;
       word-break: break-word;
+    }
+
+    .sample a {
+      color: var(--color-link);
+      text-decoration: underline;
+      text-underline-offset: 0.12em;
+    }
+
+    .sample[data-links-enabled='false'] a {
+      pointer-events: none;
+      cursor: inherit;
     }
 
     .sample.benton-book {
@@ -212,13 +410,16 @@ export class CanvasTipografia extends LitElement {
 
   render() {
     return html`
-      <article class="block">
+      <article class="block" style=${`justify-content:${this.computedJustifyContent};`}>
         <p
           class="sample ${this.preset}"
           contenteditable=${this.editing ? 'true' : 'false'}
+          data-links-enabled=${String(this.linksEnabled)}
           spellcheck="false"
           style=${`color:${this.color};text-align:${this.align};font-weight:${this.computedFontWeight};font-style:${this.computedFontStyle};font-size:${this.fontSize}px;`}
           @blur=${this.handleBlur}
+          @paste=${this.handlePaste}
+          @click=${this.handleLinkClick}
         >${unsafeHTML(this.text)}</p>
       </article>
     `;

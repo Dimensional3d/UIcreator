@@ -17,6 +17,9 @@ export class CanvasInputText extends LitElement {
   @property({ type: String })
   icon: IconName = 'eye-off';
 
+  @property({ type: Boolean })
+  iconVisible = true;
+
   @property({ type: String })
   status: 'active' | 'inactive' = 'inactive';
 
@@ -90,6 +93,10 @@ export class CanvasInputText extends LitElement {
         border-color 160ms ease,
         box-shadow 160ms ease,
         background-color 160ms ease;
+    }
+
+    .field[data-has-actions='false'] {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .field[data-status='active'] {
@@ -212,6 +219,7 @@ export class CanvasInputText extends LitElement {
   render() {
     const isFilled = this.value.trim().length > 0;
     const isFloating = isFilled || this.status === 'active';
+    const hasActions = isFilled || this.iconVisible;
 
     return html`
       <label
@@ -220,6 +228,7 @@ export class CanvasInputText extends LitElement {
         data-floating=${String(isFloating)}
         data-status=${this.status}
         data-enabled=${String(this.enabled)}
+        data-has-actions=${String(hasActions)}
       >
         <div class="content">
           <span class="label">${this.label}</span>
@@ -234,7 +243,8 @@ export class CanvasInputText extends LitElement {
             @focus=${this.handleFocus}
           />
         </div>
-        <div class="actions">
+        ${hasActions
+          ? html`<div class="actions">
           ${isFilled
             ? html`
                 <button
@@ -254,10 +264,13 @@ export class CanvasInputText extends LitElement {
                 </button>
               `
             : null}
-          <span class="icon-slot" aria-hidden="true">
-            <canvas-icon .icon=${this.icon}></canvas-icon>
-          </span>
-        </div>
+          ${this.iconVisible
+            ? html`<span class="icon-slot" aria-hidden="true">
+                <canvas-icon .icon=${this.icon}></canvas-icon>
+              </span>`
+            : null}
+        </div>`
+          : null}
       </label>
     `;
   }

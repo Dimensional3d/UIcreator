@@ -21,7 +21,7 @@ export class CanvasMainButton extends LitElement {
       height: 100%;
       box-sizing: border-box;
       border: none;
-      border-radius: 18px;
+      border-radius: 16px;
       background: linear-gradient(180deg, #1829b8 0%, #1220a0 100%);
       color: #ffffff;
       font-family: var(--font-sans);

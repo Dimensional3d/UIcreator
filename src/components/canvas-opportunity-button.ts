@@ -21,7 +21,7 @@ export class CanvasOpportunityButton extends LitElement {
       height: 100%;
       box-sizing: border-box;
       border: none;
-      border-radius: 18px;
+      border-radius: 16px;
       background: var(--color-primary);
       color: #ffffff;
       font-family: var(--font-sans);
