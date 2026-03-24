@@ -1,0 +1,1 @@
+var e=`home`;function t(){let t=window.location.hash.replace(`#/`,``);return t===`home`||t===`settings`?t:e}function n(e){window.location.hash=`/${e}`}export{t as getCurrentRoute,n as goTo};
