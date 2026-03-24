@@ -1,7 +1,6 @@
 import { LitElement, css, html } from 'lit';
-import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 import { customElement, property } from 'lit/decorators.js';
-import { ICON_OPTIONS, colorizeIconBody, type IconName } from './icon-library';
+import { ICON_OPTIONS, type IconName } from './icon-library';
 
 @customElement('canvas-icon')
 export class CanvasIcon extends LitElement {
@@ -13,10 +12,6 @@ export class CanvasIcon extends LitElement {
 
   private get selectedIcon() {
     return ICON_OPTIONS.find((option) => option.value === this.icon) ?? ICON_OPTIONS[0];
-  }
-
-  private get colorizedIconBody() {
-    return colorizeIconBody(this.selectedIcon.body);
   }
 
   static styles = css`
@@ -31,28 +26,27 @@ export class CanvasIcon extends LitElement {
       height: 100%;
       display: grid;
       place-items: center;
-      color: var(--icon-color, #001391);
     }
 
-    svg {
+    .glyph {
       width: 100%;
       height: 100%;
       display: block;
-      overflow: visible;
+      background-color: var(--icon-color, #001391);
+      -webkit-mask: var(--icon-src) center / contain no-repeat;
+      mask: var(--icon-src) center / contain no-repeat;
     }
   `;
 
   render() {
     return html`
-      <div class="icon" aria-label=${this.selectedIcon.label} style=${`--icon-color:${this.color};`}>
-        <svg
-          viewBox=${this.selectedIcon.viewBox}
-          fill="currentColor"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          ${unsafeSVG(this.colorizedIconBody)}
-        </svg>
+      <div
+        class="icon"
+        role="img"
+        aria-label=${this.selectedIcon.label}
+        style=${`--icon-color:${this.color};--icon-src:url('${this.selectedIcon.src}');`}
+      >
+        <span class="glyph" aria-hidden="true"></span>
       </div>
     `;
   }

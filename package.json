@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "if [ -d dist ]; then trash=.dist-trash-$(date +%s); mv dist \"$trash\"; rm -rf \"$trash\" >/dev/null 2>&1 & fi; tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

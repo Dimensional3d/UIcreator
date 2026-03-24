@@ -30,7 +30,7 @@ import '../components/tool-micro-illustration';
 import '../components/tool-opportunity-button';
 import '../components/tool-secondary-button';
 import '../components/tool-tipografia';
-import { ICON_OPTIONS, colorizeIconBody, type IconName } from '../components/icon-library';
+import { ICON_OPTIONS, type IconName } from '../components/icon-library';
 import {
   MICRO_ILLUSTRATION_OPTIONS,
   type MicroIllustrationName,
@@ -5672,8 +5672,16 @@ export class HomeScreen extends LitElement {
       const actionAttribute = item.action
         ? ` data-action="${this.escapeCodeText(item.action)}"`
         : '';
+      const iconStyle = [
+        'width: 18px',
+        'height: 18px',
+        'display: block',
+        'background-color: var(--color-primary-strong)',
+        `-webkit-mask: url('${icon.src}') center / contain no-repeat`,
+        `mask: url('${icon.src}') center / contain no-repeat`,
+      ].join('; ');
 
-      return `  <button type="button" style="${style}"${actionAttribute}><svg viewBox="${icon.viewBox}" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;display:block;color:var(--color-primary-strong);">${colorizeIconBody(icon.body)}</svg></button>`;
+      return `  <button type="button" style="${style}"${actionAttribute}><span aria-hidden="true" style="${iconStyle}"></span></button>`;
     }
 
     const background =
@@ -5787,7 +5795,9 @@ export class HomeScreen extends LitElement {
       'width: 20px',
       'height: 20px',
       'display: block',
-      'color: #001391',
+      'background-color: #001391',
+      `-webkit-mask: url('${icon.src}') center / contain no-repeat`,
+      `mask: url('${icon.src}') center / contain no-repeat`,
     ].join('; ');
 
     const clearStyle = [
@@ -5808,7 +5818,7 @@ export class HomeScreen extends LitElement {
         ? `      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="${clearStyle}"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" /></svg>`
         : '',
       iconVisible
-        ? `      <svg viewBox="${icon.viewBox}" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="${iconStyle}">${colorizeIconBody(icon.body)}</svg>`
+        ? `      <span aria-hidden="true" style="${iconStyle}"></span>`
         : '',
       hasActions ? `    </div>` : '',
       `  </label>`,
@@ -5819,16 +5829,24 @@ export class HomeScreen extends LitElement {
 
   private buildIconCode(item: CanvasIconItem): string {
     const icon = ICON_OPTIONS.find((option) => option.value === item.icon) ?? ICON_OPTIONS[0];
+    const iconColor = this.normalizeColorValue(item.color ?? 'var(--color-primary-strong)');
     const style = [
       'position: absolute',
       `left: ${Math.round(item.x)}px`,
       `top: ${Math.round(item.y)}px`,
       `width: ${Math.round(item.width)}px`,
       `height: ${Math.round(item.height)}px`,
-      `color: ${this.normalizeColorValue(item.color ?? 'var(--color-primary-strong)')}`,
+    ].join('; ');
+    const maskStyle = [
+      'width: 100%',
+      'height: 100%',
+      'display: block',
+      `background-color: ${iconColor}`,
+      `-webkit-mask: url('${icon.src}') center / contain no-repeat`,
+      `mask: url('${icon.src}') center / contain no-repeat`,
     ].join('; ');
 
-    return `  <div style="${style}"><svg viewBox="${icon.viewBox}" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">${colorizeIconBody(icon.body)}</svg></div>`;
+    return `  <div style="${style}"><span aria-hidden="true" style="${maskStyle}"></span></div>`;
   }
 
   private buildDesktopMenuCode(item: CanvasDesktopMenuItem): string {

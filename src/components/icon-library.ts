@@ -3,9 +3,12 @@ export type IconOption = {
   label: string;
   viewBox: string;
   body: string;
+  src: string;
 };
 
-const CUSTOM_ICON_OPTIONS: IconOption[] = [
+type RawIconOption = Omit<IconOption, 'src'>;
+
+const CUSTOM_ICON_OPTIONS: RawIconOption[] = [
   {
     value: 'home',
     label: 'Home',
@@ -101,7 +104,7 @@ const CUSTOM_ICON_OPTIONS: IconOption[] = [
 
 ];
 
-const BBVA_SITE_ICON_OPTIONS: IconOption[] = [
+const BBVA_SITE_ICON_OPTIONS: RawIconOption[] = [
   {
     value: 'bbva-1-028-international',
     label: 'International',
@@ -601,9 +604,19 @@ const BBVA_SITE_ICON_OPTIONS: IconOption[] = [
 
 ];
 
-export const ICON_OPTIONS = [...CUSTOM_ICON_OPTIONS, ...BBVA_SITE_ICON_OPTIONS] as const;
+export function getIconSourcePath(iconName: string) {
+  return `${import.meta.env.BASE_URL}icons/${iconName}.svg`;
+}
 
-export type IconName = (typeof ICON_OPTIONS)[number]['value'];
+export const ICON_OPTIONS: readonly IconOption[] = [
+  ...CUSTOM_ICON_OPTIONS,
+  ...BBVA_SITE_ICON_OPTIONS,
+].map((option) => ({
+  ...option,
+  src: getIconSourcePath(option.value),
+}));
+
+export type IconName = IconOption['value'];
 
 export function colorizeIconBody(body: string) {
   return body.replace(
